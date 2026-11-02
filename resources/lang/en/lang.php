@@ -7357,4 +7357,11 @@ _Message' => 'Customer notification for provider bid offer
   'Others' => 'Others',
   'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.' => 'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.',
   'Each car image must be a valid image file.' => 'Each car image must be a valid image file.',
+  'Customer Vehicles / Cars' => 'Customer Vehicles / Cars',
+  'Year' => 'Year',
+  'Photos' => 'Photos',
+  'Click to view full photo' => 'Click to view full photo',
+  'Added' => 'Added',
+  'Saved Addresses' => 'Saved Addresses',
+  'Scroll within box to view all' => 'Scroll within box to view all',
 );
