@@ -64,6 +64,7 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
         });
         Route::group(['prefix' => 'document', 'as' => 'document.'], function () {
             Route::get('list', [CustomerDocumentController::class, 'index']);
+            Route::get('my-documents', [CustomerDocumentController::class, 'myDocuments']);
             Route::post('upload', [CustomerDocumentController::class, 'upload']);
             Route::delete('delete/{id}', [CustomerDocumentController::class, 'destroy']);
         });

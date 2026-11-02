@@ -52,6 +52,26 @@ class CustomerDocumentController extends Controller
     }
 
     /**
+     * Get all documents uploaded by this customer.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function myDocuments(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || !in_array($user->user_type, CUSTOMER_USER_TYPES)) {
+            return response()->json(response_formatter(DEFAULT_403), 401);
+        }
+
+        $documents = CustomerDocument::with('documentType')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return response()->json(response_formatter(DEFAULT_200, $documents), 200);
+    }
+
+    /**
      * Upload or update a customer document.
      * @param Request $request
      * @return JsonResponse

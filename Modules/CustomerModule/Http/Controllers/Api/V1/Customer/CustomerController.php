@@ -45,7 +45,7 @@ class CustomerController extends Controller
     public function index(Request $request): JsonResponse
     {
         if (in_array($request->user()->user_type, CUSTOMER_USER_TYPES)) {
-            $customer = $this->customer->with(['bookings', 'car', 'cars'])->where('id', auth()->user()->id)->first();
+            $customer = $this->customer->with(['bookings', 'car', 'cars', 'documents.documentType'])->where('id', auth()->user()->id)->first();
 
             $lastIncompleteOfflineBooking = Booking::where('customer_id', auth()->user()->id)
                 ->where('payment_method', 'offline_payment')
