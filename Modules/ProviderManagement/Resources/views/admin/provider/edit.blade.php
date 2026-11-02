@@ -232,36 +232,8 @@
                                     <h4 class="c1">{{translate('Select Address from Map')}}</h4>
                                 </div>
                                 <div class="row gx-2">
-                                    <div class="col-md-6 col-12">
-                                        <div class="mb-30">
-                                            <div class="form-floating form-floating__icon">
-                                                <input type="text" class="form-control" name="latitude"
-                                                       id="latitude"
-                                                       placeholder="{{translate('latitude')}} *"
-                                                       value="{{$provider->coordinates['latitude'] ?? null}}"
-                                                       required readonly
-                                                       data-bs-toggle="tooltip" data-bs-placement="top"
-                                                       title="{{translate('Select from map')}}">
-                                                <label>{{translate('latitude')}} *</label>
-                                                <span class="material-icons">location_on</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 col-12">
-                                        <div class="mb-30">
-                                            <div class="form-floating form-floating__icon">
-                                                <input type="text" class="form-control" name="longitude"
-                                                       id="longitude"
-                                                       placeholder="{{translate('longitude')}} *"
-                                                       value="{{$provider->coordinates['longitude'] ?? null}}"
-                                                       required readonly
-                                                       data-bs-toggle="tooltip" data-bs-placement="top"
-                                                       title="{{translate('Select from map')}}">
-                                                <label>{{translate('longitude')}} *</label>
-                                                <span class="material-icons">location_on</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <input type="hidden" name="latitude" id="latitude" value="{{$provider->coordinates['latitude'] ?? old('latitude', '23.811842872190343')}}">
+                                    <input type="hidden" name="longitude" id="longitude" value="{{$provider->coordinates['longitude'] ?? old('longitude', '90.356331')}}">
                                     <div class="col-12">
                                         <div id="location_map_div" class="location_map_class">
                                             <input id="pac-input" class="form-control w-auto"
@@ -692,6 +664,10 @@
 
                         if (places.length == 0) {
                             return;
+                        }
+                        if (places[0].geometry && places[0].geometry.location) {
+                            document.getElementById('latitude').value = places[0].geometry.location.lat();
+                            document.getElementById('longitude').value = places[0].geometry.location.lng();
                         }
                         markers.forEach((marker) => {
                             marker.setMap(null);

@@ -195,6 +195,7 @@ class BookingEstimateController extends Controller
             $estimate->customer_id = $existingCustomer?->id;
             $estimate->customer_name = $request->customer_name;
             $estimate->customer_phone = $request->customer_phone;
+            $estimate->customer_email = $request->customer_email;
             $customerAddressParts = array_filter([
                 $request->filled('customer_house') ? 'House: ' . $request->customer_house : null,
                 $request->filled('customer_floor') ? 'Floor: ' . $request->customer_floor : null,

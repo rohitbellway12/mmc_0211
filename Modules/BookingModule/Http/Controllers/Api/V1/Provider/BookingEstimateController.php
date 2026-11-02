@@ -224,6 +224,8 @@ class BookingEstimateController extends Controller
             $estimate->provider_id = $provider->id;
             $estimate->customer_id = $existingCustomer?->id;
             $estimate->customer_name = $request->customer_name;
+            $estimate->customer_phone = $request->customer_phone;
+            $estimate->customer_email = $request->customer_email;
             $serviceAddrRaw = $request->service_address ?? null;
             $serviceAddrDecoded = null;
             if (!empty($serviceAddrRaw)) {

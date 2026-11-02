@@ -7355,4 +7355,5 @@ _Message' => 'Customer notification for provider bid offer
   'Office / Business' => 'Office / Business',
   'Garage / Workshop' => 'Garage / Workshop',
   'Others' => 'Others',
+  'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.' => 'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.',
 );

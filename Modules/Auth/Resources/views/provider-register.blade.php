@@ -11,7 +11,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <?php
-    $favIcon = getBusinessSettingsImageFullPath(key: 'business_favicon', settingType: 'business_information', path: 'business/',  defaultPath : 'public/assets/admin-module/img/placeholder.png')
+    $favIcon = getBusinessSettingsImageFullPath(key: 'business_favicon', settingType: 'business_information', path: 'business/',  defaultPath : 'public/assets/admin-module/img/placeholder.png');
+    $addressLat = \Modules\BusinessSettingsModule\Entities\BusinessSettings::where('key_name','address_latitude')->first()?->live_values ?? 23.811842872190;
+    $addressLong = \Modules\BusinessSettingsModule\Entities\BusinessSettings::where('key_name','address_longitude')->first()?->live_values ?? 90.356331;
     ?>
     <link rel="shortcut icon" href="{{ $favIcon }}"/>
 
@@ -823,35 +825,8 @@
                                         </div>
                                     </div>
 
-                                    <div class="row">
-                                        <div class="col-lg-6">
-                                            <div class="mb-30">
-                                                <div class="form-floating">
-                                                    <input type="text" id="latitude" name="latitude"
-                                                            class="form-control"
-                                                            placeholder="{{ translate('Ex:') }} 23.8118428"
-                                                            value="{{ old('latitude') }}" required
-                                                            data-bs-toggle="tooltip" data-bs-placement="top"
-                                                            title="{{translate('Select from map')}}" readonly>
-                                                    <label for="latitude">{{ translate('latitude') }}</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <div class="mb-30">
-                                                <div class="form-floating">
-                                                    <input type="text" step="0.1" name="longitude"
-                                                            class="form-control"
-                                                            placeholder="{{ translate('Ex:') }} 90.356331"
-                                                            id="longitude"
-                                                            value="{{ old('longitude') }}" required
-                                                            data-bs-toggle="tooltip" data-bs-placement="top"
-                                                            title="{{translate('Select from map')}}" readonly>
-                                                    <label for="longitude">{{ translate('longitude') }}</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude', $addressLat) }}">
+                                    <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude', $addressLong) }}">
 
                                     <div class="mb-30">
                                         <div class="form-error-wrap">
@@ -1479,6 +1454,10 @@
 
                     if (places.length == 0) {
                         return;
+                    }
+                    if (places[0].geometry && places[0].geometry.location) {
+                        document.getElementById('latitude').value = places[0].geometry.location.lat();
+                        document.getElementById('longitude').value = places[0].geometry.location.lng();
                     }
 
                     markers.forEach((marker) => {
