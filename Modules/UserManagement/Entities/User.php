@@ -172,7 +172,12 @@ class User extends Authenticatable
 
     public function car(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(UserCar::class);
+        return $this->hasOne(UserCar::class)->latestOfMany();
+    }
+
+    public function cars(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserCar::class, 'user_id')->latest();
     }
 
     public function getProfileImageFullPathAttribute()

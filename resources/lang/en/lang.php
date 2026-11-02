@@ -7356,4 +7356,5 @@ _Message' => 'Customer notification for provider bid offer
   'Garage / Workshop' => 'Garage / Workshop',
   'Others' => 'Others',
   'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.' => 'Car Hire / Chauffeur quotation created successfully! Share the link with the customer.',
+  'Each car image must be a valid image file.' => 'Each car image must be a valid image file.',
 );

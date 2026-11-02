@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\AddressController;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CustomerController;
+use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CarController;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\SubscribeNewsletterController;
 
 /*
@@ -52,6 +53,14 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
     Route::resource('address', 'AddressController', ['only' => ['index', 'store', 'edit', 'update', 'destroy']])->withoutMiddleware(['api:auth']);
     Route::group(['middleware' => ['auth:api']], function () {
         Route::get('info', [CustomerController::class, 'index']);
+        Route::group(['prefix' => 'car', 'as' => 'car.'], function () {
+            Route::get('list', [CarController::class, 'index']);
+            Route::post('create', [CarController::class, 'store']);
+            Route::get('detail/{id}', [CarController::class, 'show']);
+            Route::post('update/{id}', [CarController::class, 'update']);
+            Route::put('update/{id}', [CarController::class, 'update']);
+            Route::delete('delete/{id}', [CarController::class, 'destroy']);
+        });
         Route::put('update/profile',[CustomerController::class, 'updateProfile']);
         Route::put('update/fcm-token',[CustomerController::class, 'updateFcmToken']);
         // Route::delete('remove-account', [CustomerController::class, 'removeAccount']);
