@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\AddressController;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CustomerController;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CarController;
+use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CustomerDocumentController;
 use Modules\CustomerModule\Http\Controllers\Api\V1\Customer\SubscribeNewsletterController;
 
 /*
@@ -60,6 +61,11 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
             Route::post('update/{id}', [CarController::class, 'update']);
             Route::put('update/{id}', [CarController::class, 'update']);
             Route::delete('delete/{id}', [CarController::class, 'destroy']);
+        });
+        Route::group(['prefix' => 'document', 'as' => 'document.'], function () {
+            Route::get('list', [CustomerDocumentController::class, 'index']);
+            Route::post('upload', [CustomerDocumentController::class, 'upload']);
+            Route::delete('delete/{id}', [CustomerDocumentController::class, 'destroy']);
         });
         Route::put('update/profile',[CustomerController::class, 'updateProfile']);
         Route::put('update/fcm-token',[CustomerController::class, 'updateFcmToken']);

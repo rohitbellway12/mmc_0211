@@ -14,6 +14,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CustomerModule\Http\Controllers\Web\Admin\LoyaltyPointController;
 use Modules\CustomerModule\Http\Controllers\Web\Admin\WalletController;
+use Modules\CustomerModule\Http\Controllers\Web\Admin\CustomerDocumentSetupController;
 use Modules\CustomerModule\Http\Controllers\Web\Admin\SubscribeNewsletterController;
 use Stevebauman\Location\Facades\Location;
 
@@ -36,6 +37,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin',
         Route::any('status-update/{id}', 'CustomerController@statusUpdate')->name('status-update');
         Route::delete('delete/{id}', 'CustomerController@destroy')->name('delete');
         Route::any('download', 'CustomerController@download')->name('download');
+        Route::group(['prefix' => 'document-setup', 'as' => 'document-setup.'], function () {
+            Route::get('/', [CustomerDocumentSetupController::class, 'index'])->name('index');
+            Route::post('store', [CustomerDocumentSetupController::class, 'store'])->name('store');
+            Route::get('edit/{id}', [CustomerDocumentSetupController::class, 'edit'])->name('edit');
+            Route::put('update/{id}', [CustomerDocumentSetupController::class, 'update'])->name('update');
+            Route::any('status-update/{id}', [CustomerDocumentSetupController::class, 'statusUpdate'])->name('status-update');
+            Route::delete('delete/{id}', [CustomerDocumentSetupController::class, 'destroy'])->name('delete');
+        });
 
         Route::group(['prefix' => 'wallet', 'as' => 'wallet.'], function () {
             Route::get('add-fund', [WalletController::class, 'addFund'])->name('add-fund');

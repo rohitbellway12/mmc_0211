@@ -598,7 +598,7 @@ class CustomerController extends Controller
         $webPage = $request->has('web_page') ? $request['web_page'] : 'overview';
 
         if ($request->web_page == 'overview') {
-            $customer = $this->user->with(['account', 'addresses', 'cars'])->withCount(['bookings'])->find($id);
+            $customer = $this->user->with(['account', 'addresses', 'cars', 'documents.documentType'])->withCount(['bookings'])->find($id);
             $totalBookingAmount = $this->booking->where('customer_id', $id)->sum('total_booking_amount');
 
             $booking_overview = DB::table('bookings')->where('customer_id', $id)

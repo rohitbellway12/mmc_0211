@@ -520,6 +520,12 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                                 </a>
                             </li>
                         @endcan
+                        <li>
+                            <a href="{{ route('admin.customer.document-setup.index') }}"
+                                class="{{ request()->is('admin/customer/document-setup*') ? 'active-menu' : '' }}">
+                                {{ translate('Required Documents') }}
+                            </a>
+                        </li>
                     </ul>
                 </li>
             @endcanany

@@ -220,6 +220,64 @@
                             </div>
                         @endif
 
+                        {{-- Customer Uploaded Documents Section --}}
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h3 class="mb-0 d-flex align-items-center gap-2">
+                                    <span class="material-icons c1">folder_shared</span>
+                                    <span>{{translate('Customer Uploaded Documents')}}</span>
+                                    <span class="badge bg-soft-primary text-primary rounded-pill px-2 fs-12">{{$customer->documents ? $customer->documents->count() : 0}}</span>
+                                </h3>
+                                <a href="{{route('admin.customer.document-setup.index')}}" class="btn btn--secondary btn-sm" target="_blank">
+                                    <span class="material-icons">settings</span>
+                                    {{translate('Manage Required Documents')}}
+                                </a>
+                            </div>
+
+                            @if($customer->documents && $customer->documents->count() > 0)
+                                <div class="row g-3">
+                                    @foreach($customer->documents as $doc)
+                                        <div class="col-md-6 col-xl-4">
+                                            <div class="information-details-box p-3 h-100 d-flex flex-column justify-content-between border rounded bg-white shadow-xs">
+                                                <div>
+                                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="material-icons text-primary fs-20">description</span>
+                                                            <strong class="text-dark fs-14">{{$doc->documentType?->title ?: translate('Document')}}</strong>
+                                                        </div>
+                                                        @if($doc->documentType?->is_required)
+                                                            <span class="badge bg-danger text-white fs-11">{{translate('Required')}}</span>
+                                                        @endif
+                                                    </div>
+                                                    @if(!empty($doc->documentType?->description))
+                                                        <div class="text-muted fs-12 mb-2">{{$doc->documentType->description}}</div>
+                                                    @endif
+                                                    @if(!empty($doc->file_name))
+                                                        <div class="fs-12 text-secondary text-truncate" title="{{$doc->file_name}}">
+                                                            <i class="material-icons fs-14 align-middle">attach_file</i> {{$doc->file_name}}
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                <div class="border-top pt-2 mt-2 d-flex align-items-center justify-content-between">
+                                                    <span class="fs-12 text-muted">{{date('d-M-Y H:i', strtotime($doc->created_at))}}</span>
+                                                    <a href="{{$doc->file_path_full_path}}" target="_blank" class="btn btn-sm btn--primary py-1 px-3" title="{{translate('View / Download')}}">
+                                                        <span class="material-icons fs-16 align-middle">visibility</span>
+                                                        {{translate('View')}}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="information-details-box text-center py-4 text-muted">
+                                    <span class="material-icons d-block mb-1 fs-30 text-muted opacity-50">file_copy</span>
+                                    <span>{{translate('No documents uploaded by this customer yet.')}}</span>
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
                 </div>
             </div>
