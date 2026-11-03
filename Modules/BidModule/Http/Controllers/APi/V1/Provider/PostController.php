@@ -170,6 +170,7 @@ class PostController extends Controller
         $this->ignored_post->updateOrCreate(
             ['post_id' => $request['post_id'], 'provider_id' => $request->user()->provider->id], [
             'post_id' => $request['post_id'],
+            'reason' => $request['reason'] ?? $request['decline_reason'] ?? $request['ignore_reason'] ?? null,
         ]);
 
         return response()->json(response_formatter(DEFAULT_200, null), 200);

@@ -293,8 +293,10 @@ class PostController extends Controller
         } else if ($request['status'] == 'ignore') {
             $this->ignored_post->updateOrCreate(
                 ['post_id' => $id, 'provider_id' => $request->user()->provider->id], [
-                'post_id' => $id
+                'post_id' => $id,
+                'reason' => $request->input('reason', $request->input('ignore_reason')),
             ]);
+            Toastr::success(translate('Booking request ignored successfully!'));
         }
 
         return redirect(route('provider.booking.post.list', ['type' => 'all']));

@@ -7390,4 +7390,12 @@ _Message' => 'Customer notification for provider bid offer
   'Please select a file to upload.' => 'Please select a file to upload.',
   'Supported formats are: JPEG, JPG, PNG, WEBP, PDF, DOC, DOCX.' => 'Supported formats are: JPEG, JPG, PNG, WEBP, PDF, DOC, DOCX.',
   'View / Download' => 'View / Download',
+  'Ignore Booking Request' => 'Ignore Booking Request',
+  'Please provide a reason for ignoring this request:' => 'Please provide a reason for ignoring this request:',
+  'Reason' => 'Reason',
+  'e.g., Currently fully booked, Location outside radius, Cannot undertake this specific job, etc.' => 'E.g., Currently fully booked, Location outside radius, Cannot undertake this specific job, etc.',
+  'Confirm Ignore' => 'Confirm Ignore',
+  'Ignore this request?' => 'Ignore this request ',
+  'e.g., Fully booked, Distance too far, etc.' => 'E.g., Fully booked, Distance too far, etc.',
+  'Booking request ignored successfully!' => 'Booking request ignored successfully!',
 );

@@ -513,8 +513,9 @@
 
                         @if(!$post->is_booked && !$post?->bids->contains('provider_id', auth()->user()->provider->id))
                             <div class="d-flex justify-content-end gap-3 mt-4">
-                                <a href="{{route('provider.booking.post.update_status', [$post->id, 'status' => 'ignore'])}}"
-                                   class="btn btn-danger">{{translate('Ignore')}}</a>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#ignorePostModal">
+                                    {{translate('Ignore')}}
+                                </button>
                                 <a class="btn btn--primary" href="#" data-bs-toggle="modal"
                                    data-bs-target="#newBookingModal">{{translate('Place Offer')}}</a>
                             </div>
@@ -526,6 +527,34 @@
                         @endif
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Ignore Request Modal -->
+    <div class="modal fade" id="ignorePostModal" tabindex="-1" aria-labelledby="ignorePostModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{route('provider.booking.post.update_status', [$post->id])}}" method="POST">
+                    @csrf
+                    <input type="hidden" name="status" value="ignore">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title" id="ignorePostModalLabel">{{translate('Ignore Booking Request')}}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted fs-13 mb-3">{{translate('Please provide a reason for ignoring this request:')}}</p>
+                        <div class="form-group mb-0">
+                            <label for="ignore_reason" class="form-label fw-semibold mb-2">{{translate('Reason')}} <span class="text-danger">*</span></label>
+                            <textarea name="reason" id="ignore_reason" class="form-control" rows="3" required placeholder="{{translate('e.g., Currently fully booked, Location outside radius, Cannot undertake this specific job, etc.')}}"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0 pb-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn--secondary" data-bs-dismiss="modal">{{translate('Cancel')}}</button>
+                        <button type="submit" class="btn btn-danger">{{translate('Confirm Ignore')}}</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

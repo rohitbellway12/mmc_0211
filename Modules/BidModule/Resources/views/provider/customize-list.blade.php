@@ -500,34 +500,35 @@
                                              aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
-                                                    <div class="modal-header border-0 pb-0">
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="d-flex flex-column gap-2 align-items-center">
-                                                            <img width="75" class="mb-2"
-                                                                 src="{{asset('public/assets/provider-module')}}/img/media/ignore-request.png"
-                                                                 alt="">
-                                                            <h3>{{translate('Are you sure you want to ignore this request')}}
-                                                                ?</h3>
-                                                            <div
-                                                                class="text-muted fs-12">{{translate('You will lose the customer booking request')}}</div>
+                                                    <form action="{{route('provider.booking.post.update_status', [$post->id])}}" method="POST">
+                                                        @csrf
+                                                        <input type="hidden" name="status" value="ignore">
+                                                        <div class="modal-header border-0 pb-0">
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                    aria-label="Close"></button>
                                                         </div>
-                                                    </div>
-                                                    <div
-                                                        class="modal-footer d-flex justify-content-center gap-3 border-0 pt-0 pb-4">
-                                                        <button type="button" class="btn btn--secondary"
-                                                                data-bs-dismiss="modal"
-                                                                aria-label="Close">{{translate('Cancel')}}</button>
-                                                        <a href="{{route('provider.booking.post.update_status', [$post->id, 'status' => 'ignore'])}}"
-                                                           type="button"
-                                                           class="btn btn--primary">{{translate('Ignore')}}</a>
-                                                    </div>
+                                                        <div class="modal-body">
+                                                            <div class="d-flex flex-column gap-2 align-items-center mb-3">
+                                                                <img width="65" class="mb-1"
+                                                                     src="{{asset('public/assets/provider-module')}}/img/media/ignore-request.png"
+                                                                     alt="">
+                                                                <h4 class="mb-0">{{translate('Ignore this request?')}}</h4>
+                                                                <div class="text-muted fs-12">{{translate('Please provide a reason for ignoring this request:')}}</div>
+                                                            </div>
+                                                            <div class="form-group text-start">
+                                                                <label class="form-label fw-semibold fs-13 mb-1">{{translate('Reason')}} <span class="text-danger">*</span></label>
+                                                                <textarea name="reason" class="form-control" rows="2" required placeholder="{{translate('e.g., Fully booked, Distance too far, etc.')}}"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer d-flex justify-content-center gap-3 border-0 pt-0 pb-4">
+                                                            <button type="button" class="btn btn--secondary"
+                                                                    data-bs-dismiss="modal">{{translate('Cancel')}}</button>
+                                                            <button type="submit" class="btn btn-danger">{{translate('Confirm Ignore')}}</button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div class="modal fade" id="withdrawRequestModal--{{$post['id']}}" tabindex="-1"
                                              aria-labelledby="withdrawRequestModalLabel"
                                              aria-hidden="true">

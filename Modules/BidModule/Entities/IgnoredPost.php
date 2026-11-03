@@ -10,7 +10,7 @@ class IgnoredPost extends Model
 {
     use HasFactory, HasUuid;
 
-    protected $fillable = ['post_id', 'provider_id'];
+    protected $fillable = ['post_id', 'provider_id', 'reason'];
 
     protected static function newFactory()
     {
