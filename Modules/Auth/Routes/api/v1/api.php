@@ -13,6 +13,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin', 'namespace' => 'Api\V1'], fu
 Route::group(['prefix' => 'provider', 'as' => 'provider', 'namespace' => 'Api\V1'], function () {
 
     Route::group(['prefix' => 'auth', 'as' => 'auth.'], function () {
+        Route::post('sign-up', 'RegisterController@providerRegisterWebStyle')->name('sign-up');
+        Route::post('signup', 'RegisterController@providerRegisterWebStyle')->name('signup');
         Route::post('registration-step-1', 'RegisterController@providerRegistrationStep1')->name('registration-step-1');
         Route::post('verification', 'RegisterController@providerVerification')->name('verification');
         Route::post('resend-otp', 'RegisterController@providerResendOtp')->name('resend-otp');

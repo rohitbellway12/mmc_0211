@@ -344,8 +344,8 @@ class RegisterController extends Controller
             'last_name' => 'nullable',
             'email' => 'required|email',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10',
-            'password' => 'required|min:8',
-            'confirm_password' => 'required|same:password',
+            'password' => 'nullable|min:8',
+            'confirm_password' => 'nullable|same:password',
             'zone_id' => 'required|uuid',
             'latitude' => 'required',
             'longitude' => 'required',
@@ -1009,7 +1009,7 @@ class RegisterController extends Controller
     //     $owner->identification_number = $request->identity_number;
     //     $owner->identification_type = $request->identity_type;
     //     $owner->identification_image = $identityImages;
-    //     $owner->password = bcrypt($request->password);
+    //     $owner->password = !empty($request->password) ? bcrypt($request->password) : bcrypt(\Illuminate\Support\Str::random(16));
     //     $owner->user_type = 'provider-admin';
     //     $owner->is_active = 0;
 
@@ -1236,4 +1236,119 @@ class RegisterController extends Controller
         return response()->json(response_formatter(DEFAULT_404), 200);
     }
 
+
+    /**
+     * Provider All-in-One Sign-up API (Identical to Website /provider/auth/sign-up)
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function providerRegisterWebStyle(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'contact_person_name' => 'required',
+            'contact_person_phone' => 'required',
+            'contact_person_email' => 'required|email',
+
+            'account_first_name' => 'required',
+            'account_last_name' => 'required',
+            'zone_id' => 'required|uuid',
+            'account_email' => 'required|email',
+            'account_phone' => 'required',
+            'password' => 'nullable|min:8',
+            'confirm_password' => 'nullable|same:password',
+
+            'company_name' => 'required',
+            'company_phone' => 'required',
+            'company_address' => 'required',
+            'company_email' => 'required|email',
+            'logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:10000',
+
+            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id',
+            'identity_number' => 'required',
+            'identity_images' => 'required|array',
+            'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:10000',
+
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
+        }
+
+        if (User::where('email', $request['account_email'])->exists()) {
+            return response()->json(response_formatter(DEFAULT_400, null, [["error_code" => "account_email", "message" => translate('Email already taken')]]), 400);
+        }
+        if (User::where('phone', $request['account_phone'])->exists()) {
+            return response()->json(response_formatter(DEFAULT_400, null, [["error_code" => "account_phone", "message" => translate('Phone already taken')]]), 400);
+        }
+
+        $identity_images = [];
+        foreach ($request->identity_images as $image) {
+            $imageName = file_uploader('provider/identity/', 'png', $image);
+            $identity_images[] = ['image' => $imageName, 'storage' => getDisk()];
+        }
+
+        $provider = new Provider();
+        $provider->company_name = $request->company_name;
+        $provider->company_phone = $request->company_phone;
+        $provider->company_email = $request->company_email;
+        $provider->logo = file_uploader('provider/logo/', 'png', $request->file('logo'));
+        $provider->company_address = $request->company_address;
+
+        $provider->contact_person_name = $request->contact_person_name;
+        $provider->contact_person_phone = $request->contact_person_phone;
+        $provider->contact_person_email = $request->contact_person_email;
+        $provider->is_approved = 2; // Pending Admin Approval (same as website)
+        $provider->is_active = 0;
+        $provider->zone_id = $request['zone_id'];
+        if (!empty($request->latitude) && !empty($request->longitude)) {
+            $provider->coordinates = ['latitude' => $request->latitude, 'longitude' => $request->longitude];
+        }
+
+        $owner = new User();
+        $owner->first_name = $request->account_first_name;
+        $owner->last_name = $request->account_last_name;
+        $owner->email = $request->account_email;
+        $owner->phone = $request->account_phone;
+        $owner->identification_number = $request->identity_number;
+        $owner->identification_type = $request->identity_type;
+        $owner->identification_image = $identity_images;
+        $owner->password = !empty($request->password) ? bcrypt($request->password) : bcrypt(\Illuminate\Support\Str::random(16));
+        $owner->user_type = 'provider-admin';
+        $owner->is_active = 0;
+
+        DB::transaction(function () use ($provider, $owner, $request) {
+            $owner->save();
+            $provider->user_id = $owner->id;
+            $provider->save();
+
+            $serviceLocation = ['customer'];
+            ProviderSetting::create([
+                'provider_id'   => $provider->id,
+                'key_name'      => 'service_location',
+                'live_values'   => json_encode($serviceLocation),
+                'test_values'   => json_encode($serviceLocation),
+                'settings_type' => 'provider_config',
+                'mode'          => 'live',
+                'is_active'     => 1,
+            ]);
+        });
+
+        // Notify Admin via email if configured
+        try {
+            $adminEmail = business_config('business_email', 'business_information')?->live_values;
+            if (!empty($adminEmail)) {
+                Mail::to($adminEmail)->send(new NewJoiningRequestMail($provider));
+            }
+        } catch (\Exception $e) {
+            info("Admin notification email error on provider signup: " . $e->getMessage());
+        }
+
+        return response()->json(response_formatter(PROVIDER_STORE_200, [
+            'provider_id' => $provider->id,
+            'company_name' => $provider->company_name,
+            'is_approved' => $provider->is_approved,
+        ]), 200);
+    }
 }
