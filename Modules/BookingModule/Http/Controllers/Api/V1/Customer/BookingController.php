@@ -65,6 +65,13 @@ class BookingController extends Controller
 
         $serviceAtProviderPlace = (int) ((business_config('service_at_provider_place', 'provider_config'))->live_values ?? 0);
 
+        if ($request->has('answers') && is_string($request->answers)) {
+            $decodedAnswers = json_decode($request->answers, true);
+            if (is_array($decodedAnswers)) {
+                $request->merge(['answers' => $decodedAnswers]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'payment_method' => 'required|in:' . implode(',', array_column(PAYMENT_METHODS, 'key')),
             'zone_id' => 'required|uuid',
@@ -113,7 +120,9 @@ class BookingController extends Controller
             'special_conditions' => 'nullable|string',
             'notes' => 'nullable|string',
             'postcode' => 'nullable|string',
-            'car_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'car_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'car_images' => 'nullable|array',
+            'car_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             function ($attribute, $value, $fail) use ($serviceAtProviderPlace) {
                 if ($value == 'provider' && $serviceAtProviderPlace != 1) {
                     $fail('The selected service location cannot be "provider" because the service is not available at the provider’s place.');
@@ -172,6 +181,7 @@ class BookingController extends Controller
             'notes' => $request->notes,
             'postcode' => $request->postcode,
             'car_image' => $request->file('car_image'),
+            'car_images' => $request->file('car_images'),
         ];
 
         if ($request['payment_method'] == 'wallet_payment') {

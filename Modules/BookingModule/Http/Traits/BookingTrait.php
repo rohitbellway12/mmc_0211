@@ -141,9 +141,19 @@ trait BookingTrait
                 $booking->notes = $additionalData['notes'] ?? null;
                 $booking->postcode = $additionalData['postcode'] ?? null;
 
+                $uploadedEvidence = [];
+                if (isset($additionalData['car_images']) && is_array($additionalData['car_images'])) {
+                    foreach ($additionalData['car_images'] as $cImg) {
+                        if ($cImg && is_file($cImg)) {
+                            $uploadedEvidence[] = file_uploader('booking/', $cImg->getClientOriginalExtension(), $cImg);
+                        }
+                    }
+                }
                 if (isset($additionalData['car_image']) && !is_null($additionalData['car_image'])) {
-                    $image_name = file_uploader('booking/', $additionalData['car_image']->getClientOriginalExtension(), $additionalData['car_image']);
-                    $booking->evidence_photos = [$image_name];
+                    $uploadedEvidence[] = file_uploader('booking/', $additionalData['car_image']->getClientOriginalExtension(), $additionalData['car_image']);
+                }
+                if (!empty($uploadedEvidence)) {
+                    $booking->evidence_photos = $uploadedEvidence;
                 }
 
                 $booking->save();
