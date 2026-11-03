@@ -161,7 +161,7 @@ trait BookingTrait
                 if (isset($additionalData['answers']) && is_array($additionalData['answers'])) {
                     foreach ($additionalData['answers'] as $questionId => $answer) {
                         $question = \Modules\ProviderManagement\Entities\ProviderQuestion::find($questionId);
-                        $finalAnswer = $answer;
+                        $finalAnswer = is_array($answer) ? implode(', ', $answer) : $answer;
 
                         if ($question && $question->question_type == 'file' && request()->hasFile('answers.' . $questionId)) {
                             $file = request()->file('answers.' . $questionId);
@@ -486,7 +486,7 @@ trait BookingTrait
                 if (isset($request['answers']) && is_array($request['answers'])) {
                     foreach ($request['answers'] as $questionId => $answer) {
                         $question = \Modules\ProviderManagement\Entities\ProviderQuestion::find($questionId);
-                        $finalAnswer = $answer;
+                        $finalAnswer = is_array($answer) ? implode(', ', $answer) : $answer;
 
                         if ($question && $question->question_type == 'file' && request()->hasFile('answers.' . $questionId)) {
                             $file = request()->file('answers.' . $questionId);
