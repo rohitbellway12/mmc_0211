@@ -248,6 +248,27 @@
             transition: all 0.2s ease;
             text-decoration: none;
         }
+                .btn-decline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            border-radius: var(--radius-md);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            width: 100%;
+        }
+        .btn-decline:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
         .btn-accept:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);

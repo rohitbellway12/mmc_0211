@@ -482,7 +482,7 @@ class BookingEstimateController extends Controller
             ]), 400);
         }
 
-        if ($status !== 'all' && in_array($status, ['pending', 'accepted', 'canceled'])) {
+        if ($status !== 'all' && in_array($status, ['pending', 'accepted', 'canceled', 'rejected'])) {
             $query->where('status', $status);
         }
 
@@ -490,5 +490,99 @@ class BookingEstimateController extends Controller
 
         return response()->json(response_formatter(DEFAULT_200, $estimates), 200);
     }
-}
 
+    /**
+     * Customer declines/rejects an estimate/quotation with a reason
+     */
+    public function decline(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'link_token' => 'required_without:estimate_id|string',
+            'estimate_id' => 'required_without:link_token',
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => translate('Please provide a reason for declining the quotation.'),
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
+        }
+
+        $token = $request->link_token ?? $request->estimate_id;
+        $cleanId = preg_replace('/[^0-9]/', '', (string)$token);
+
+        $estimate = BookingEstimate::where('link_token', $token)
+            ->orWhere('id', $token)
+            ->when(!empty($cleanId), function ($q) use ($cleanId) {
+                $q->orWhere('readable_id', $cleanId);
+            })
+            ->with(['service', 'provider.owner'])
+            ->first();
+
+        if (!$estimate) {
+            return response()->json(response_formatter(DEFAULT_404, null, [['error_code' => 'estimate', 'message' => translate('Quotation not found')]]), 404);
+        }
+
+        if ($estimate->status == 'accepted' || !empty($estimate->booking_id)) {
+            return response()->json(response_formatter([
+                'response_code' => 'already_accepted_400',
+                'message' => translate('This quotation has already been accepted and cannot be declined.'),
+            ]), 400);
+        }
+
+        if ($estimate->status == 'rejected') {
+            return response()->json(response_formatter([
+                'response_code' => 'already_rejected_200',
+                'message' => translate('This quotation has already been declined.'),
+            ], $estimate), 200);
+        }
+
+        if ($estimate->status == 'canceled') {
+            return response()->json(response_formatter([
+                'response_code' => 'already_canceled_400',
+                'message' => translate('This quotation was canceled by the provider.'),
+            ]), 400);
+        }
+
+        $estimate->status = 'rejected';
+        $estimate->reject_reason = $request->reason;
+        $estimate->save();
+
+        // Push / FCM Notification to provider owner
+        try {
+            $fcmToken = $estimate->provider?->owner?->fcm_token;
+            $title = translate('Quotation Declined');
+            $readableId = $estimate->readable_id ?? $estimate->id;
+            $description = translate("Customer declined quotation #{$readableId}. Reason: {$request->reason}");
+
+            if (!empty($fcmToken)) {
+                device_notification($fcmToken, $title, $description, null, $estimate->id, 'estimate_declined');
+            }
+
+            if ($estimate->provider?->owner?->id) {
+                $pushNotification = new \Modules\PromotionManagement\Entities\PushNotification();
+                $pushNotification->title = $title;
+                $pushNotification->description = $description;
+                $pushNotification->zone_ids = [$estimate->zone_id ?? config('zone_id')];
+                $pushNotification->to_users = ['provider-admin'];
+                $pushNotification->is_active = 1;
+                $pushNotification->save();
+
+                $pushNotificationUser = new \Modules\PromotionManagement\Entities\PushNotificationUser();
+                $pushNotificationUser->push_notification_id = $pushNotification->id;
+                $pushNotificationUser->user_id = $estimate->provider->owner->id;
+                $pushNotificationUser->save();
+            }
+        } catch (\Exception $e) {
+            info("Notification error on estimate decline: " . $e->getMessage());
+        }
+
+        return response()->json(response_formatter(DEFAULT_UPDATE_200, [
+            'id' => $estimate->id,
+            'readable_id' => $estimate->readable_id,
+            'status' => $estimate->status,
+            'reject_reason' => $estimate->reject_reason,
+            'updated_at' => $estimate->updated_at,
+        ]), 200);
+    }
+}

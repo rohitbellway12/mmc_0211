@@ -740,4 +740,49 @@ class BookingEstimateController extends Controller
         Toastr::success(translate('Quotation accepted and booking created successfully!'));
         return back();
     }
+
+    /**
+     * Customer declines estimate from public Web view
+     */
+    public function customerDeclineWeb(Request $request, string $token): RedirectResponse
+    {
+        $estimate = BookingEstimate::where('link_token', $token)
+            ->orWhere('id', $token)
+            ->firstOrFail();
+
+        if ($estimate->status == 'accepted' || !empty($estimate->booking_id)) {
+            Toastr::warning(translate('This quotation has already been accepted!'));
+            return back();
+        }
+
+        if ($estimate->status == 'canceled') {
+            Toastr::error(translate('This quotation was canceled by the provider.'));
+            return back();
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => translate('Please enter a reason for declining this quotation.'),
+        ]);
+
+        $estimate->status = 'rejected';
+        $estimate->reject_reason = $request->reason;
+        $estimate->save();
+
+        // Notify provider
+        try {
+            $fcmToken = $estimate->provider?->owner?->fcm_token;
+            $title = translate("Quotation Declined");
+            $description = translate("Customer declined quotation #{$estimate->readable_id}. Reason: {$request->reason}");
+            if ($fcmToken) {
+                device_notification($fcmToken, $title, $description, null, $estimate->id, 'estimate_declined');
+            }
+        } catch (\Exception $e) {
+            info("Web estimate decline notification error: " . $e->getMessage());
+        }
+
+        Toastr::success(translate('Quotation has been declined.'));
+        return back();
+    }
 }

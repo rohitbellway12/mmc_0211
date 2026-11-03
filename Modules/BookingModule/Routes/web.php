@@ -13,6 +13,7 @@ Route::get('invoice', function () {
 // Public customer estimate view & web acceptance
 Route::get('estimate/{token}', [BookingEstimateController::class, 'customerView'])->name('estimate.view');
 Route::post('estimate/{token}/accept', [BookingEstimateController::class, 'customerAcceptWeb'])->name('estimate.accept');
+Route::post('estimate/{token}/decline', [BookingEstimateController::class, 'customerDeclineWeb'])->name('estimate.decline');
 
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin', 'middleware' => ['admin']], function () {
 

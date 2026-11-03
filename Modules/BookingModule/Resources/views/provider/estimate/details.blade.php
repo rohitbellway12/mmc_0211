@@ -82,6 +82,18 @@
                 </div>
             </div>
 
+                        @if($estimate->status == 'rejected')
+                {{-- Quotation Rejected Alert --}}
+                <div class="alert alert-danger d-flex align-items-center gap-3 p-3 mb-4 rounded-3 shadow-sm">
+                    <span class="material-icons text-danger fs-24">highlight_off</span>
+                    <div>
+                        <div class="fw-bold">{{ translate('Quotation Declined by Customer') }}</div>
+                        <div class="fz-13 mt-1">
+                            {{ translate('Reason') }}: <strong>{{ $estimate->reject_reason ?? translate('No reason provided') }}</strong>
+                        </div>
+                    </div>
+                </div>
+            @endif
             @if($estimate->status == 'accepted' && ($estimate->booking || $estimate->car_booking_id))
                 {{-- Booking Linked Alert --}}
                 <div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 shadow-sm">

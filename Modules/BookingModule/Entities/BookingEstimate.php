@@ -60,6 +60,7 @@ class BookingEstimate extends Model
         'total_amount',
         'notes',
         'status',
+        'reject_reason',
         'booking_id',
         'car_booking_id',
         'link_token',

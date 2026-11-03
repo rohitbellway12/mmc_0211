@@ -554,10 +554,10 @@ class BookingController extends Controller
                 return response()->json(response_formatter(BOOKING_ALREADY_IGNORED_200), 200);
             }
 
-            $bookingIgnore = $this->bookingIgnore;
+            $bookingIgnore = new $this->bookingIgnore;
             $bookingIgnore->booking_id = $bookingId;
             $bookingIgnore->provider_id = $providerId;
-            $bookingIgnore->reason = $request->reason ?? $request->ignore_reason ?? $request->input('reason');
+            $bookingIgnore->reason = $request->reason ?? $request->decline_reason ?? $request->ignore_reason ?? $request->input('reason');
 
             if (!empty($booking->provider_id)) {
                 $booking->provider_id = null;
