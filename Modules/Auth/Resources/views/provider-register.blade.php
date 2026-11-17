@@ -630,6 +630,7 @@
 
     <?php
     $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'business_information', path: 'business/',  defaultPath : 'public/assets/admin-module/img/placeholder.png');
+    $isPartner = old('is_partner', request('type') == 'partner' || request('is_partner') == 1 ? 1 : 0);
     ?>
 
     <div class="dark-support">
@@ -642,32 +643,53 @@
                             alt="{{ translate('MMC Logo') }}"
                             style="max-width: 150px; filter: drop-shadow(0 0 15px rgba(250, 210, 147, 0.4));">
 
-                        <h2 class="text-center text-white mt-2 fw-bold" style="font-size: 1.85rem; line-height: 1.3;">
-                            Drive Your <br><span class="gold-gradient-text">Business Forward</span>
+                        <h2 class="text-center text-white mt-2 fw-bold" id="left-title" style="font-size: 1.85rem; line-height: 1.35;">
+                            {!! $isPartner 
+                                ? translate('Expand Your') . '<br><span class="gold-gradient-text">' . translate('Partner Network') . '</span>' 
+                                : translate('Grow Your') . '<br><span class="gold-gradient-text">' . translate('Automotive Business') . '</span>' !!}
                         </h2>
 
-                        <p class="text-white-50 mt-3 mb-4" style="font-size: 0.92rem; line-height: 1.5;">
-                            {{ translate('Join the MMC Elite Automotive Partner Network & expand your service terminal.') }}
+                        <p class="text-white-50 mt-3 mb-4" id="left-desc" style="font-size: 0.92rem; line-height: 1.5;">
+                            {{ $isPartner 
+                                ? translate('Join the MMC Elite Automotive Partner Network to manage client estimates, submit professional quotations, and scale.') 
+                                : translate('Join the MMC Automotive Network to connect with verified clients, manage bookings, and expand your service reach.') }}
                         </p>
 
-                        <div class="partner-perks text-start d-flex flex-column gap-2 p-3 mb-4" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-gold); border-radius: 14px;">
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
-                                <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
-                                <span class="text-white">{{ translate('Direct Automotive Service Bookings') }}</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
-                                <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
-                                <span class="text-white">{{ translate('Verified & Trusted Partner Terminal') }}</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
-                                <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
-                                <span class="text-white">{{ translate('Real-time Dispatch & Revenue Analytics') }}</span>
-                            </div>
+                        <div class="partner-perks text-start d-flex flex-column gap-2 p-3 mb-4" id="left-perks" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-gold); border-radius: 14px;">
+                            @if($isPartner)
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Client Quotations & Estimates Management') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Verified & Trusted Partner Access') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Real-time Dispatch & Revenue Analytics') }}</span>
+                                </div>
+                            @else
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Direct Automotive Service Bookings') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Verified & Trusted Automotive Network') }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                                    <span class="text-white">{{ translate('Real-time Booking & Earnings Tracking') }}</span>
+                                </div>
+                            @endif
                         </div>
 
                         <div class="pt-2 border-top" style="border-color: rgba(255, 255, 255, 0.1) !important;">
-                            <span class="text-white-50" style="font-size: 0.9rem;">{{ translate('Already registered as partner?') }}</span>
-                            <a href="{{ route('provider.auth.login') }}" class="text-gold fw-bold ms-1" style="text-decoration: none;">{{ translate('Sign In to Terminal') }} &rarr;</a>
+                            <span class="text-white-50" id="left-signin-text" style="font-size: 0.9rem;">
+                                {{ $isPartner ? translate('Already registered as partner?') : translate('Already have an account?') }}
+                            </span>
+                            <a href="{{ route('provider.auth.login') }}" class="text-gold fw-bold ms-1" style="text-decoration: none;">{{ translate('Sign In') }} &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -677,12 +699,12 @@
                 <div class="register-right mx-auto p-3">
                     <div class="text-center mb-4 d-flex flex-column gap-1 mt-2">
                         <div class="d-inline-flex align-items-center justify-content-center mb-1">
-                            <span class="badge" style="background: rgba(250, 210, 147, 0.15); color: #FAD293; border: 1px solid rgba(250, 210, 147, 0.3); border-radius: 20px; font-weight: 600; font-size: 0.75rem; letter-spacing: 1px; padding: 6px 14px; text-transform: uppercase;">
-                                {{ translate('Partner Onboarding') }}
+                            <span class="badge" id="reg-badge" style="background: rgba(250, 210, 147, 0.15); color: #FAD293; border: 1px solid rgba(250, 210, 147, 0.3); border-radius: 20px; font-weight: 600; font-size: 0.75rem; letter-spacing: 1px; padding: 6px 14px; text-transform: uppercase;">
+                                {{ translate('Join MMC Network') }}
                             </span>
                         </div>
-                        <h2 class="gold-gradient-text fw-bold mb-1" style="font-size: 1.95rem;">{{ translate('Provider Registration') }}</h2>
-                        <p class="text-white-50 mb-0" style="font-size: 0.9rem;">{{ translate('Sign up to connect and provide premium automotive services') }}</p>
+                        <h2 class="gold-gradient-text fw-bold mb-1" id="reg-title" style="font-size: 1.95rem;">{{ translate('Provider & Partner Registration') }}</h2>
+                        <p class="text-white-50 mb-0" id="reg-subtitle" style="font-size: 0.9rem;">{{ translate('Register your business to start receiving bookings and expand your reach') }}</p>
                     </div>
 
                     <form action="{{route('provider.auth.sign-up-submit')}}" method="POST" enctype="multipart/form-data" id="register-vertical-steps">
@@ -693,6 +715,23 @@
                             <div class="" id="register-form-p-0">
                                 <h3 class="border-bottom mb-4 pb-2">{{translate('Basic Information')}}</h3>
                                 <h5 class="border-bottom mb-4 pb-2">{{translate('General_Information')}}</h5>
+                                @php($isPartner = old('is_partner', request('type') == 'partner' || request('is_partner') == 1 ? 1 : 0))
+                                <div class="mb-4">
+                                    <label class="form-label mb-2 fw-semibold text-white-50 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">{{ translate('Register As') }}</label>
+                                    <div class="d-flex gap-3">
+                                        <div class="flex-grow-1 text-center p-3 rounded role-option-card {{ !$isPartner ? 'active-role' : '' }}" id="role-provider-card" style="cursor: pointer; border: 1px solid {{ !$isPartner ? 'var(--primary)' : 'rgba(255, 255, 255, 0.1)' }}; background: {{ !$isPartner ? 'rgba(250, 210, 147, 0.12)' : 'rgba(255, 255, 255, 0.03)' }}; transition: all 0.3s ease;">
+                                            <span class="material-icons mb-1" style="font-size: 28px; color: var(--primary);">business</span>
+                                            <div class="fw-bold text-white">{{ translate('Provider') }}</div>
+                                            <div class="text-white-50" style="font-size: 0.75rem;">{{ translate('Standard Service Provider') }}</div>
+                                        </div>
+                                        <div class="flex-grow-1 text-center p-3 rounded role-option-card {{ $isPartner ? 'active-role' : '' }}" id="role-partner-card" style="cursor: pointer; border: 1px solid {{ $isPartner ? 'var(--primary)' : 'rgba(255, 255, 255, 0.1)' }}; background: {{ $isPartner ? 'rgba(250, 210, 147, 0.12)' : 'rgba(255, 255, 255, 0.03)' }}; transition: all 0.3s ease;">
+                                            <span class="material-icons mb-1" style="font-size: 28px; color: #FAD293;">handshake</span>
+                                            <div class="fw-bold text-white">{{ translate('Partner') }}</div>
+                                            <div class="text-white-50" style="font-size: 0.75rem;">{{ translate('Quotation & Business Partner') }}</div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="is_partner" id="is_partner" value="{{ $isPartner }}">
+                                </div>
                                 <div class="mb-4">
                                     <div class="mb-30">
                                         <div class="form-floating form-floating__icon">
@@ -1516,6 +1555,62 @@
                 $(this).find('i').addClass('tio-invisible')
                 $(this).find('i').removeClass('tio-hidden-outlined')
             }
+        });
+
+        $('#role-provider-card').on('click', function () {
+            $('#role-partner-card').removeClass('active-role').css({'border-color': 'rgba(255, 255, 255, 0.1)', 'background': 'rgba(255, 255, 255, 0.03)'});
+            $(this).addClass('active-role').css({'border-color': 'var(--primary)', 'background': 'rgba(250, 210, 147, 0.12)'});
+            $('#is_partner').val('0');
+            $('#reg-badge').text("{{ translate('Service Provider') }}");
+            $('#reg-title').text("{{ translate('Provider Registration') }}");
+            $('#reg-subtitle').text("{{ translate('Register your business to start receiving service bookings') }}");
+
+            // Dynamic Left Content
+            $('#left-title').html("{{ translate('Grow Your') }}<br><span class=\"gold-gradient-text\">{{ translate('Automotive Business') }}</span>");
+            $('#left-desc').text("{{ translate('Join the MMC Automotive Network to connect with verified clients, manage bookings, and expand your service reach.') }}");
+            $('#left-perks').html(`
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Direct Automotive Service Bookings') }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Verified & Trusted Automotive Network') }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Real-time Booking & Earnings Tracking') }}</span>
+                </div>
+            `);
+            $('#left-signin-text').text("{{ translate('Already have an account?') }}");
+        });
+
+        $('#role-partner-card').on('click', function () {
+            $('#role-provider-card').removeClass('active-role').css({'border-color': 'rgba(255, 255, 255, 0.1)', 'background': 'rgba(255, 255, 255, 0.03)'});
+            $(this).addClass('active-role').css({'border-color': 'var(--primary)', 'background': 'rgba(250, 210, 147, 0.12)'});
+            $('#is_partner').val('1');
+            $('#reg-badge').text("{{ translate('Business Partner') }}");
+            $('#reg-title').text("{{ translate('Partner Registration') }}");
+            $('#reg-subtitle').text("{{ translate('Register to manage quotations, client estimates, and grow your network') }}");
+
+            // Dynamic Left Content
+            $('#left-title').html("{{ translate('Expand Your') }}<br><span class=\"gold-gradient-text\">{{ translate('Partner Network') }}</span>");
+            $('#left-desc').text("{{ translate('Join the MMC Elite Automotive Partner Network to manage client estimates, submit professional quotations, and scale.') }}");
+            $('#left-perks').html(`
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Client Quotations & Estimates Management') }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Verified & Trusted Partner Access') }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.88rem;">
+                    <span class="material-icons text-gold" style="font-size: 18px;">check_circle</span>
+                    <span class="text-white">{{ translate('Real-time Dispatch & Revenue Analytics') }}</span>
+                </div>
+            `);
+            $('#left-signin-text').text("{{ translate('Already registered as partner?') }}");
         });
     </script>
 </body>

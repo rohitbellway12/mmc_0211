@@ -221,11 +221,24 @@
             <img src="{{ $logo }}" class="login-logo" alt="MMC">
         </div>
 
-        <h1 class="form-title">{{ translate('Provider Sign In') }}</h1>
-        <p class="form-subtitle">{{ translate('Premium Automotive Partner Terminal') }}</p>
+        <h1 class="form-title" id="login-title">{{ translate('Provider Sign In') }}</h1>
+        <p class="form-subtitle">{{ translate('Premium Automotive Terminal') }}</p>
+
+        <!-- Role Selector Toggle -->
+        <div class="d-flex mb-4 p-1" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(250, 210, 147, 0.25); border-radius: 14px;">
+            <button type="button" class="btn flex-grow-1 role-toggle-btn active-role-btn" id="btn-login-provider" data-role="provider" style="border-radius: 10px; font-weight: 700; font-size: 0.9rem; padding: 10px 14px; background: var(--gold-gradient); color: #000; border: none; transition: all 0.3s ease;">
+                <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">business</span>
+                {{ translate('Provider') }}
+            </button>
+            <button type="button" class="btn flex-grow-1 role-toggle-btn" id="btn-login-partner" data-role="partner" style="border-radius: 10px; font-weight: 600; font-size: 0.9rem; padding: 10px 14px; background: transparent; color: rgba(255, 255, 255, 0.65); border: none; transition: all 0.3s ease;">
+                <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">handshake</span>
+                {{ translate('Partner') }}
+            </button>
+        </div>
 
         <form action="{{ route('provider.auth.login') }}" method="POST" id="login-form">
             @csrf
+            <input type="hidden" name="login_type" id="login_type" value="provider">
 
             <div class="form-group-premium">
                 <span class="material-icons input-icon">email</span>
@@ -317,6 +330,26 @@
                     ProgressBar: true
                 });
             @endforeach
+        @endif
+
+        $('#btn-login-provider').on('click', function() {
+            $(this).addClass('active-role-btn').css({'background': 'var(--gold-gradient)', 'color': '#000', 'font-weight': '700'});
+            $('#btn-login-partner').removeClass('active-role-btn').css({'background': 'transparent', 'color': 'rgba(255, 255, 255, 0.65)', 'font-weight': '600'});
+            $('#login_type').val('provider');
+            $('#login-title').text("{{ translate('Provider Sign In') }}");
+            $('#signInBtn').text("{{ translate('Login to Terminal') }}");
+        });
+
+        $('#btn-login-partner').on('click', function() {
+            $(this).addClass('active-role-btn').css({'background': 'var(--gold-gradient)', 'color': '#000', 'font-weight': '700'});
+            $('#btn-login-provider').removeClass('active-role-btn').css({'background': 'transparent', 'color': 'rgba(255, 255, 255, 0.65)', 'font-weight': '600'});
+            $('#login_type').val('partner');
+            $('#login-title').text("{{ translate('Partner Sign In') }}");
+            $('#signInBtn').text("{{ translate('Login as Partner') }}");
+        });
+
+        @if(request('type') == 'partner' || request('role') == 'partner')
+            $('#btn-login-partner').trigger('click');
         @endif
     </script>
 </body>

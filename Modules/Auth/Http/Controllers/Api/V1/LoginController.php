@@ -146,6 +146,20 @@ class LoginController extends Controller
             return response()->json(response_formatter(ACCOUNT_DISABLED), 401);
         }
 
+        if ($request->has('login_type') && in_array($request->login_type, ['provider', 'partner'])) {
+            $isPartnerExpected = $request->login_type == 'partner' ? 1 : 0;
+            if (($user->provider->is_partner ?? 0) != $isPartnerExpected) {
+                self::updateUserHitCount($user);
+                $msg = $isPartnerExpected == 1
+                    ? translate('This account is registered as a Provider, not a Partner. Please switch to Provider login.')
+                    : translate('This account is registered as a Partner, not a Provider. Please switch to Partner login.');
+                return response()->json(response_formatter([
+                    'response_code' => 'auth_login_403',
+                    'message' => $msg
+                ], null, [['error_code' => 'login_type', 'message' => $msg]]), 403);
+            }
+        }
+
         if ($user){
             $access = mobileAppCheck($user, 'mobile_app');
             if (!$access){
@@ -312,6 +326,23 @@ class LoginController extends Controller
             return response()->json(response_formatter(ACCOUNT_DISABLED), 401);
         }
 
+        // Optional Role check if login_type is passed ('partner' vs 'provider')
+        if ($request->filled('login_type')) {
+            $loginType = strtolower($request->login_type);
+            $isPartner = (int)($user->provider->is_partner ?? 0);
+            if ($loginType === 'partner' && $isPartner !== 1) {
+                return response()->json(response_formatter([
+                    'response_code' => 'auth_login_401',
+                    'message' => translate('This account is registered as a Provider, not a Partner. Please log in as Provider.')
+                ]), 401);
+            } elseif ($loginType === 'provider' && $isPartner === 1) {
+                return response()->json(response_formatter([
+                    'response_code' => 'auth_login_401',
+                    'message' => translate('This account is registered as a Partner, not a Provider. Please log in as Partner.')
+                ]), 401);
+            }
+        }
+
         if ($request->has('otp')) {
             $otpValidator = Validator::make($request->all(), [
                 'otp' => 'required|max:6',
@@ -394,7 +425,6 @@ class LoginController extends Controller
             $otp = '1234';
         }
 
-        // 📱 Phone aur Email dono ke liye gateway handle karna
         if ($identityType === 'phone') {
             $published_status = 0;
             $payment_published_status = config('get_payment_publish_status');
@@ -427,10 +457,6 @@ class LoginController extends Controller
         return response()->json(response_formatter(DEFAULT_SENT_OTP_200, ['otp' => $otp]), 200);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function customerLogOut(Request $request): JsonResponse
     {
         if (!auth()->user()) {
@@ -873,7 +899,11 @@ if (
      */
     protected function authenticate($user, $access_type): array
     {
-        return ['token' => $user->createToken($access_type)->accessToken, 'is_active' => $user['is_active']];
+        $data = ['token' => $user->createToken($access_type)->accessToken, 'is_active' => $user['is_active']];
+        if ($access_type == PROVIDER_PANEL_ACCESS) {
+            $data['is_partner'] = (int) ($user->provider->is_partner ?? 0);
+        }
+        return $data;
     }
 
     /**

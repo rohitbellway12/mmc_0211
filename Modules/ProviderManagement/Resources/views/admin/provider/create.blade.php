@@ -16,8 +16,9 @@
                 @csrf
                 <h3>{{translate('Step 1')}}</h3>
                 <section>
+                    @php($isPartner = old('is_partner', request('type') == 'partner' || request('is_partner') == 1 ? 1 : 0))
                     <div class="page-title-wrap mb-3">
-                        <h2 class="page-title">{{translate('Add_New_Provider')}}</h2>
+                        <h2 class="page-title" id="page-title-text">{{ $isPartner ? translate('Add_New_Partner') : translate('Add_New_Provider') }}</h2>
                     </div>
                     <div class="card">
                         <div class="card-body">
@@ -34,6 +35,26 @@
                             <div class="row">
                                 <div class="col-md-6" id="register-form-p-0">
                                     <h4 class="c1 mb-20">{{translate('General_Information')}}</h4>
+                                    <div class="mb-30">
+                                        <label class="form-label mb-2 fw-semibold text-muted text-uppercase fz-12">{{translate('Select_Type')}}</label>
+                                        <div>
+                                            <ul class="nav nav-tabs border-0 nav--tabs nav--tabs__style2" id="providerPartnerTab" role="tablist">
+                                                <li class="nav-item">
+                                                    <a class="nav-link {{ $isPartner ? '' : 'active' }} cursor-pointer" id="type-provider-tab" data-type="provider" href="javascript:void(0)">
+                                                        <span class="material-icons align-middle" style="font-size: 18px;">business</span>
+                                                        {{ translate('Provider') }}
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a class="nav-link {{ $isPartner ? 'active' : '' }} cursor-pointer" id="type-partner-tab" data-type="partner" href="javascript:void(0)">
+                                                        <span class="material-icons align-middle" style="font-size: 18px;">handshake</span>
+                                                        {{ translate('Partner') }}
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                            <input type="hidden" name="is_partner" id="is_partner" value="{{ $isPartner }}">
+                                        </div>
+                                    </div>
                                     <div class="mb-30">
                                         <div class="form-floating form-floating__icon">
                                             <input type="text" class="form-control" value="{{old('company_name')}}"
@@ -124,11 +145,17 @@
                                                     {{old('identity_type') == 'driving_license' ? 'selected': ''}}>
                                                     {{translate('Driving_License')}}</option>
                                                 <option value="nid"
-                                                    {{old('identity_type') == 'passport' ? 'selected': ''}}>
+                                                    {{old('identity_type') == 'nid' ? 'selected': ''}}>
                                                     {{translate('nid')}}</option>
                                                 <option value="trade_license"
-                                                    {{old('identity_type') == 'nid' ? 'selected': ''}}>
+                                                    {{old('identity_type') == 'trade_license' ? 'selected': ''}}>
                                                     {{translate('Trade_License')}}</option>
+                                                <option value="company_id"
+                                                    {{old('identity_type') == 'company_id' ? 'selected': ''}}>
+                                                    {{translate('Company_Id')}}</option>
+                                                <option value="nino"
+                                                    {{old('identity_type') == 'nino' ? 'selected': ''}}>
+                                                    {{translate('NINO')}}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -416,7 +443,7 @@
     <script src="{{asset('public/assets/provider-module')}}/plugins/jquery-steps/jquery.steps.min.js"></script>
     <script src="{{asset('public/assets/provider-module')}}/plugins/jquery-validation/jquery.validate.min.js"></script>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key={{business_config('google_map', 'third_party')?->live_values['map_api_key_client']}}&libraries=places&v=3.45.8"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{business_config('google_map', 'third_party')?->live_values['map_api_key_client']}}&libraries=places"></script>
 
     <script>
         "use strict";
@@ -728,6 +755,20 @@
                     $(this).find('i').removeClass('tio-hidden-outlined')
                 }
             })
+
+            $('#type-provider-tab').on('click', function () {
+                $('#type-partner-tab').removeClass('active');
+                $(this).addClass('active');
+                $('#is_partner').val('0');
+                $('#page-title-text').text("{{ translate('Add_New_Provider') }}");
+            });
+
+            $('#type-partner-tab').on('click', function () {
+                $('#type-provider-tab').removeClass('active');
+                $(this).addClass('active');
+                $('#is_partner').val('1');
+                $('#page-title-text').text("{{ translate('Add_New_Partner') }}");
+            });
         });
 
     </script>

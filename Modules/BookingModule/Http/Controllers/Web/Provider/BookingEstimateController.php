@@ -22,6 +22,16 @@ use Modules\ZoneManagement\Entities\Zone;
 
 class BookingEstimateController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if ($request->user() && $request->user()->provider && ($request->user()->provider->is_partner ?? 0) != 1) {
+                \Brian2694\Toastr\Facades\Toastr::error(translate('Access denied. This feature is only available for partners.'));
+                return redirect()->route('provider.dashboard');
+            }
+            return $next($request);
+        })->except(['customerView', 'customerAcceptWeb', 'customerDeclineWeb']);
+    }
     /**
      * Display a listing of estimates for provider
      */

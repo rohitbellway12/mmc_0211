@@ -1076,7 +1076,7 @@ class RegisterController extends Controller
             'company_email' => 'required|email',
             'logo' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000',
             'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
-            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id',
+            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id,nino',
             'identity_number' => 'required',
             'identity_images' => 'required|array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
@@ -1150,6 +1150,7 @@ class RegisterController extends Controller
             $provider->contact_person_email = $request->contact_person_email;
             $provider->is_approved = 2;
             $provider->is_active = 0;
+            $provider->is_partner = $request->has('is_partner') ? (int)$request->is_partner : 0;
             $provider->zone_id = $request['zone_id'];
             $provider->coordinates = ['latitude' => $request['latitude'], 'longitude' => $request['longitude']];
             $provider->save();
@@ -1263,7 +1264,7 @@ class RegisterController extends Controller
             'company_email' => 'required|email',
             'logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:10000',
 
-            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id',
+            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id,nino',
             'identity_number' => 'required',
             'identity_images' => 'required|array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:10000',
@@ -1300,6 +1301,7 @@ class RegisterController extends Controller
         $provider->contact_person_phone = $request->contact_person_phone;
         $provider->contact_person_email = $request->contact_person_email;
         $provider->is_approved = 2; // Pending Admin Approval (same as website)
+        $provider->is_partner = $request->has('is_partner') ? (int)$request->is_partner : 0;
         $provider->is_active = 0;
         $provider->zone_id = $request['zone_id'];
         if (!empty($request->latitude) && !empty($request->longitude)) {

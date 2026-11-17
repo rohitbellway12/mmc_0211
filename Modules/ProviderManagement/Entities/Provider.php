@@ -35,6 +35,7 @@ class Provider extends Model
         'commission_percentage' => 'float',
         'is_active' => 'integer',
         'is_approved' => 'integer',
+        'is_partner' => 'integer',
         'coordinates' => 'json'
     ];
 
@@ -52,6 +53,11 @@ class Provider extends Model
     public function scopeOfApproval($query, $status)
     {
         $query->where('is_approved', '=', $status);
+    }
+
+    public function scopeOfPartner($query, $isPartner = 1)
+    {
+        $query->where('is_partner', '=', $isPartner);
     }
 
     public function owner(): BelongsTo

@@ -174,6 +174,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                 </ul>
             </li>
 
+            @if($provider?->is_partner == 1)
             <li class="has-sub-item {{ request()->is('provider/estimate/*') ? 'sub-menu-opened' : '' }}">
                 <a href="#" class="{{ request()->is('provider/estimate/*') ? 'active-menu' : '' }}">
                     <span class="material-icons" title="{{ translate('Quotations & Estimates') }}">request_quote</span>
@@ -194,6 +195,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                     </li>
                 </ul>
             </li>
+            @endif
 
             {{-- Help & Support Commented Out
             <li class="nav-category">{{ translate('Help & support') }}</li>

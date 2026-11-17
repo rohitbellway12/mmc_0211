@@ -160,8 +160,12 @@
                                                                     <span
                                                                         class="text-danger fz-12">{{('(' . translate('Suspended') . ')')}}</span>
                                                                 @endif
-
                                                             </a>
+                                                            @if($provider?->is_partner)
+                                                                <span class="badge badge-info fz-10 text-capitalize">{{ translate('Partner') }}</span>
+                                                            @else
+                                                                <span class="badge badge-primary fz-10 text-capitalize">{{ translate('Provider') }}</span>
+                                                            @endif
                                                         </h5>
                                                         <span
                                                             class="common-list_rating d-flex align-items-center gap-1">

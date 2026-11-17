@@ -198,7 +198,7 @@ class ProviderController extends Controller
             'company_email' => 'required|email',
             'logo' => 'required|image|mimes:jpeg,jpg,png,gif',
 
-            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id',
+            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id,nino',
             'identity_number' => 'required',
             'identity_images' => 'array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif',
@@ -250,6 +250,7 @@ class ProviderController extends Controller
         $provider->contact_person_email = $request->contact_person_email;
         $provider->is_approved = 1;
         $provider->is_active = 1;
+        $provider->is_partner = $request->has('is_partner') ? (int)$request->is_partner : 0;
         $provider->zone_id = $request['zone_id'];
         $provider->coordinates = ['latitude' => $request['latitude'], 'longitude' => $request['longitude']];
 
@@ -685,7 +686,7 @@ class ProviderController extends Controller
             'company_email' => 'required|email',
             'logo' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
 
-            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id',
+            'identity_type' => 'required|in:passport,driving_license,nid,trade_license,company_id,nino',
             'identity_number' => 'required',
             'identity_images' => 'array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif',
@@ -738,6 +739,9 @@ class ProviderController extends Controller
         $provider->contact_person_email = $request->contact_person_email;
         $provider->zone_id = $request['zone_id'];
         $provider->coordinates = ['latitude' => $request['latitude'], 'longitude' => $request['longitude']];
+        if ($request->has('is_partner')) {
+            $provider->is_partner = (int)$request->is_partner;
+        }
 
         $owner = $provider->owner()->first();
         $owner->identification_number = $request->identity_number;

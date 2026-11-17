@@ -218,6 +218,18 @@ class LoginController extends Controller
             return redirect(route('provider.auth.login'));
         }
 
+        if ($request->has('login_type') && in_array($request->login_type, ['provider', 'partner'])) {
+            $isPartnerExpected = $request->login_type == 'partner' ? 1 : 0;
+            if (($user->provider->is_partner ?? 0) != $isPartnerExpected) {
+                self::update_user_hit_count($user);
+                $msg = $isPartnerExpected == 1
+                    ? translate('This account is registered as a Provider, not a Partner. Please switch to Provider login.')
+                    : translate('This account is registered as a Partner, not a Provider. Please switch to Partner login.');
+                Toastr::error($msg);
+                return redirect(route('provider.auth.login'));
+            }
+        }
+
         if (isset($user->temp_block_time) && Carbon::parse($user->temp_block_time)->DiffInSeconds() <= $temp_block_time) {
             $time = $temp_block_time - Carbon::parse($user->temp_block_time)->DiffInSeconds();
             Toastr::error(translate('Try_again_after') . ' ' . CarbonInterval::seconds($time)->cascade()->forHumans());
