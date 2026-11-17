@@ -3726,6 +3726,7 @@ const BUSINESS_SETTINGS_TYPE = [
     'cash_after_service' => 'service_setup',
     'digital_payment' => 'service_setup',
     'offline_payment' => 'service_setup',
+    'wallet_payment' => 'service_setup',
     'partial_payment' => 'service_setup',
     'partial_payment_combinator' => 'service_setup',
     'booking_otp' => 'booking_setup',

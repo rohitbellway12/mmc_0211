@@ -191,30 +191,47 @@ class CustomerController extends Controller
     public function transferLoyaltyPointToWallet(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'point' => 'required',
+            'point' => 'required|numeric|min:1',
         ]);
 
         if ($validator->fails()) {
             return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
         }
 
-
-        //user point check (if has sufficient amount)
-        $user = $this->customer->find($request->user()->id);
-        if($request['point'] > $user->loyalty_point) {
-            return response()->json(response_formatter(DEFAULT_400, null, null), 400);
+        // Feature status check
+        $loyaltyStatus = (int)(business_config('customer_loyalty_point', 'customer_config')?->live_values ?? 0);
+        if ($loyaltyStatus !== 1) {
+            $msg = translate('Customer loyalty point feature is currently disabled');
+            return response()->json(response_formatter([
+                'response_code' => 'loyalty_point_disabled_400',
+                'message' => $msg
+            ], null, [['error_code' => 'loyalty_point', 'message' => $msg]]), 400);
         }
 
-        //minimum point check (for transferring)
-        $minPoint = business_config('min_loyalty_point_to_transfer', 'customer_config')->live_values;
-        if ($request['point'] < $minPoint ) {
-            return response()->json(response_formatter(DEFAULT_400, null, null), 400);
+        // Minimum point check (for transferring)
+        $minPoint = (int)(business_config('min_loyalty_point_to_transfer', 'customer_config')?->live_values ?? 0);
+        if ($request['point'] < $minPoint) {
+            $msg = translate('Minimum ') . $minPoint . translate(' loyalty points are required to transfer to wallet');
+            return response()->json(response_formatter([
+                'response_code' => 'minimum_point_required_400',
+                'message' => $msg
+            ], null, [['error_code' => 'point', 'message' => $msg]]), 400);
+        }
+
+        // User point check (if has sufficient amount)
+        $user = $this->customer->find($request->user()->id);
+        if ($request['point'] > $user->loyalty_point) {
+            $msg = translate('Insufficient loyalty points. Your current point balance is ') . (int)$user->loyalty_point;
+            return response()->json(response_formatter([
+                'response_code' => 'insufficient_loyalty_point_400',
+                'message' => $msg
+            ], null, [['error_code' => 'point', 'message' => $msg]]), 400);
         }
 
         $pointValuePerCurrencyUnit = business_config('loyalty_point_value_per_currency_unit', 'customer_config')->live_values;
-        $loyaltyAmount = $request['point']/$pointValuePerCurrencyUnit;
+        $loyaltyAmount = $request['point'] / $pointValuePerCurrencyUnit;
 
-        //point transfer transaction
+        // Point transfer transaction
         loyaltyPointWalletTransferTransaction($user->id, $request['point'], $loyaltyAmount);
 
         return response()->json(response_formatter(DEFAULT_200), 200);

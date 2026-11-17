@@ -470,13 +470,14 @@ class BusinessInformationController extends Controller
         $this->authorize('business_update');
 
         collect([
-            'cash_after_service', 'digital_payment', 'partial_payment', 'offline_payment'
+            'cash_after_service', 'digital_payment', 'partial_payment', 'offline_payment', 'wallet_payment'
         ])->each(fn($item, $key) => $request[$item] = $request->has($item) ? (int)$request[$item] : 0);
 
         $validator = Validator::make($request->all(), [
             'cash_after_service' => 'required|in:1,0',
             'digital_payment' => 'required|in:1,0',
             'offline_payment' => 'required|in:1,0',
+            'wallet_payment' => 'required|in:1,0',
             'partial_payment' => 'required|in:1,0',
             'partial_payment_combinator' => 'required_if:partial_payment,1|in:digital_payment,cash_after_service,offline_payment,all',
         ]);

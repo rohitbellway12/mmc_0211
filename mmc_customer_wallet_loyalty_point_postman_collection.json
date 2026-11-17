@@ -1,0 +1,866 @@
+{
+	"info": {
+		"_postman_id": "a9c12df8-43b6-4991-bdf1-8e018652c79a",
+		"name": "MMC - Customer Wallet & Loyalty Points APIs",
+		"description": "Complete Postman collection for Customer Wallet, Loyalty Points earning and transfer, Wallet Transactions, Add Fund to Wallet, Wallet Bonus, and Booking Payment via Wallet in MMC.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Authentication",
+			"item": [
+				{
+					"name": "0.1 Customer Login (Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"guest_id\": \"{{sample_uuid}}\",\n    \"type\": \"email\",\n    \"email_or_phone\": \"customer@example.com\",\n    \"password\": \"12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the customer and returns the Bearer Token. Copy token from response to collection variable {{customer_token}}."
+					},
+					"response": []
+				},
+				{
+					"name": "0.2 Customer Login (Phone)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"guest_id\": \"{{sample_uuid}}\",\n    \"type\": \"phone\",\n    \"email_or_phone\": \"+919876543210\",\n    \"password\": \"12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the customer using registered phone number."
+					},
+					"response": []
+				},
+				{
+					"name": "0.3 Admin Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email_or_phone\": \"admin@admin.com\",\n    \"password\": \"12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the admin to test admin-level transaction audits."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. Configuration & Customer Profile",
+			"item": [
+				{
+					"name": "1.1 Check Wallet & Loyalty Point Config Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"config"
+							]
+						},
+						"description": "Returns global business configuration. Look for:\n- wallet_status (1/0)\n- add_to_fund_wallet (1/0)\n- loyalty_point_status (1/0)\n- referral_earning_status (1/0)\n- wallet_payment (1/0)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Get Customer Profile (Wallet & Loyalty Balances)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"info"
+							]
+						},
+						"description": "Returns current customer profile details including current wallet_balance and loyalty_point balance."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Customer Loyalty Points",
+			"item": [
+				{
+					"name": "2.1 Get Loyalty Points Transaction History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/loyalty-point-transaction?limit=10&offset=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"loyalty-point-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Records per page"
+								},
+								{
+									"key": "offset",
+									"value": "1",
+									"description": "Page offset index"
+								}
+							]
+						},
+						"description": "Fetches loyalty points history (Earned from bookings, Debited on transfer to wallet). Also returns:\n- loyalty_point\n- loyalty_point_value_per_currency_unit\n- min_loyalty_point_to_transfer"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Convert / Transfer Loyalty Points to Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"point\": 50\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/loyalty-point/wallet-transfer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"loyalty-point",
+								"wallet-transfer"
+							]
+						},
+						"description": "Converts customer loyalty points into wallet money. Point amount must be >= min_loyalty_point_to_transfer and <= customer's current points. Conversion formula: wallet_amount = point / loyalty_point_value_per_currency_unit."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Customer Wallet & Transactions",
+			"item": [
+				{
+					"name": "3.1 Get All Wallet Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Returns current wallet_balance and paginated list of all wallet transactions (all types)."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Filter: Wallet Payments (Paid for Bookings)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=wallet_payment",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "wallet_payment",
+									"description": "Filter by debit payments for bookings"
+								}
+							]
+						},
+						"description": "Filters wallet transactions where money was deducted to pay for bookings."
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Filter: Loyalty Points Converted to Wallet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=loyalty_point_earning",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "loyalty_point_earning",
+									"description": "Filter by points converted to wallet balance"
+								}
+							]
+						},
+						"description": "Filters transactions credited into wallet from converting loyalty points."
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 Filter: Add Fund Transactions (Recharge)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=add_fund",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "add_fund",
+									"description": "Filter by self fund deposits"
+								}
+							]
+						},
+						"description": "Filters transactions where customer added money via payment gateway."
+					},
+					"response": []
+				},
+				{
+					"name": "3.5 Filter: Add Fund Bonus Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=add_fund_bonus",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "add_fund_bonus",
+									"description": "Filter by deposit bonus rewards"
+								}
+							]
+						},
+						"description": "Filters bonus money credited to wallet when adding funds."
+					},
+					"response": []
+				},
+				{
+					"name": "3.6 Filter: Booking Refund to Wallet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=booking_refund",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "booking_refund",
+									"description": "Filter by cancelled booking refunds"
+								}
+							]
+						},
+						"description": "Filters refunded money credited to customer wallet when a booking gets cancelled."
+					},
+					"response": []
+				},
+				{
+					"name": "3.7 Filter: Referral Earnings to Wallet",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=referral_earning",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "referral_earning",
+									"description": "Filter by referral bonus"
+								}
+							]
+						},
+						"description": "Filters reward money credited into wallet when a referred friend joins and completes an order."
+					},
+					"response": []
+				},
+				{
+					"name": "3.8 Filter: Fund Added Manually by Admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/wallet-transaction?limit=10&offset=1&type=fund_by_admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wallet-transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "type",
+									"value": "fund_by_admin",
+									"description": "Filter by admin manual deposit"
+								}
+							]
+						},
+						"description": "Filters transactions credited manually by the Admin from admin panel."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Customer Add Fund & Bonus",
+			"item": [
+				{
+					"name": "4.1 Get Active Wallet Bonus List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/bonus-list?limit=10&offset=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"bonus-list"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Fetches active add-fund bonus offers available for the customer to get extra wallet rewards upon adding funds."
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Initiate Add Fund (Payment Gateway URL)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/payment?access_token={{base64_customer_user_id}}&amount=500&is_add_fund=1&payment_method=razorpay&payment_platform=app&callback=http://localhost/mmc/payment-success",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payment"
+							],
+							"query": [
+								{
+									"key": "access_token",
+									"value": "{{base64_customer_user_id}}",
+									"description": "Base64 encoded customer user UUID"
+								},
+								{
+									"key": "amount",
+									"value": "500",
+									"description": "Amount to add to wallet"
+								},
+								{
+									"key": "is_add_fund",
+									"value": "1",
+									"description": "Must be 1 for wallet deposit"
+								},
+								{
+									"key": "payment_method",
+									"value": "razorpay",
+									"description": "Selected gateway: razorpay, stripe, ssl_commerz, paystack, etc."
+								},
+								{
+									"key": "payment_platform",
+									"value": "app",
+									"description": "app or web"
+								},
+								{
+									"key": "callback",
+									"value": "http://localhost/mmc/payment-success",
+									"description": "Redirect url after payment"
+								}
+							]
+						},
+						"description": "Web payment flow for adding funds to customer wallet. When payment completes, add_fund_success hook executes addFundTransactions to update wallet."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Booking Payment via Wallet",
+			"item": [
+				{
+					"name": "5.1 Place Booking using Wallet Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_method\": \"wallet_payment\",\n    \"zone_id\": \"{{sample_zone_id}}\",\n    \"service_schedule\": \"2026-11-20 14:00:00\",\n    \"service_address_id\": \"{{sample_address_id}}\",\n    \"is_partial\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customer/booking/request/send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"booking",
+								"request",
+								"send"
+							]
+						},
+						"description": "Places a service booking directly paying through customer wallet balance. If wallet_balance >= total_booking_amount, payment succeeds and amount is deducted."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Admin Side Audit & Reports",
+			"item": [
+				{
+					"name": "6.1 Admin View All Transactions (Audit Log)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/transaction?limit=20&offset=1&trx_type=all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"transaction"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "1"
+								},
+								{
+									"key": "trx_type",
+									"value": "all",
+									"description": "all, debit, or credit"
+								}
+							]
+						},
+						"description": "Admin API to audit all transactions across the entire platform including customer wallet credits/debits."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost/mmc"
+		},
+		{
+			"key": "customer_token",
+			"value": "PASTE_YOUR_CUSTOMER_TOKEN_HERE"
+		},
+		{
+			"key": "admin_token",
+			"value": "PASTE_YOUR_ADMIN_TOKEN_HERE"
+		},
+		{
+			"key": "base64_customer_user_id",
+			"value": "ZXhhbXBsZS1jdXN0b21lci1pZA=="
+		},
+		{
+			"key": "sample_uuid",
+			"value": "d8b37628-98e5-4e36-a67b-123456789abc"
+		},
+		{
+			"key": "sample_zone_id",
+			"value": "e0b0403f-9fe3-44b2-a4c3-123456789abc"
+		},
+		{
+			"key": "sample_address_id",
+			"value": "b5e94b28-1123-4567-89ab-123456789abc"
+		}
+	]
+}

@@ -529,8 +529,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                     </ul>
                 </li>
             @endcanany
-{{--
-            @canany(['wallet_add', 'wallet_view'])
+@canany(['wallet_add', 'wallet_view'])
                 <li class="has-sub-item {{ request()->is('admin/customer/wallet*') ? 'sub-menu-opened' : '' }}">
                     <a href="#" class="{{ request()->is('admin/customer/wallet*') ? 'active-menu' : '' }}">
                         <span class="material-icons" title="Customers">wallet</span>
@@ -583,9 +582,8 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                     </a>
                 </li>
             @endcan
-            --}}
-
-            @canany(['role_view', 'role_add', 'employee_add', 'employee_view'])
+            
+@canany(['role_view', 'role_add', 'employee_add', 'employee_view'])
                 <li class="nav-category" title="{{ translate('employee_management') }}">
                     {{ translate('employee_management') }}</li>
             @endcanany

@@ -611,7 +611,7 @@
                                     <div class="card2 p-20 mb-20">
                                         <div class="cus-shadow rounded p-sm-3 p-2 bg-white">
                                             <div class="row g-3">
-                                                <div class="col-md-6 col-lg-4">
+                                                <div class="col-md-6 col-lg-3">
                                                     @php($CAS = $dataValues->where('key_name', 'cash_after_service')?->first()?->live_values ?? null)
                                                     <div class="d-flex gap-sm-2 gap-2 align-items-start">
                                                         <div class="form-check form--check">
@@ -629,7 +629,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6 col-lg-4">
+                                                <div class="col-md-6 col-lg-3">
                                                     @php($digital_payment = $dataValues->where('key_name', 'digital_payment')?->first()?->live_values ?? null)
                                                     <div class="d-flex gap-sm-2 gap-2 align-items-start">
                                                         <div class="form-check form--check">
@@ -664,7 +664,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6 col-lg-4">
+                                                <div class="col-md-6 col-lg-3">
                                                     @php($offline_payment = $dataValues->where('key_name', 'offline_payment')?->first()?->live_values ?? null)
 
                                                     <div class="d-flex gap-sm-2 gap-2 align-items-start">
@@ -682,6 +682,27 @@
                                                             <p class="fz-12 max-w-500">
                                                                 {{ translate('By selecting offline payment will make it available as a payment option for customers during the checkout process.') }}
                                                                 <a @can('payment_method_view') href="{{ route('admin.configuration.third-party', ['type' => 'offline_payment', 'webPage' => 'payment_config']) }}" @endcan target="_blank" class="fw-semibold text-primary text-decoration-underline">{{ translate('click here') }}</a>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 col-lg-3">
+                                                    @php($wallet_payment = $dataValues->where('key_name', 'wallet_payment')?->first()?->live_values ?? null)
+
+                                                    <div class="d-flex gap-sm-2 gap-2 align-items-start">
+                                                        <div class="form-check form--check">
+                                                            <input class="form-check-input form-check-lg"
+                                                                   type="checkbox"
+                                                                   id="wallet_payment"
+                                                                   name="wallet_payment"
+                                                                   value="1" {{$wallet_payment ? 'checked' : ''}}>
+                                                        </div>
+                                                        <div>
+                                                            <h5 class="text-dark mb-1">
+                                                                {{ translate('Wallet Payment') }}
+                                                            </h5>
+                                                            <p class="fz-12 max-w-500">
+                                                                {{ translate('By selecting Wallet Payment will make it available as a payment option for customers during the checkout process.') }}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -3626,7 +3647,8 @@
                 if (
                     !$('#cash_after_service').is(':checked') &&
                     !$('#digital_payment').is(':checked') &&
-                    !$('#offline_payment').is(':checked')
+                    !$('#offline_payment').is(':checked') &&
+                    !$('#wallet_payment').is(':checked')
                 ) {
                     e.preventDefault();
                     toastr.error('{{ translate('Please select at least one payment method before submitting.') }}');
