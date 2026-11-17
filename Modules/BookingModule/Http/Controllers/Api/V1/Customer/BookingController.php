@@ -186,6 +186,12 @@ class BookingController extends Controller
 
         if ($request['payment_method'] == 'wallet_payment') {
             if (!isset($request['post_id'])) {
+                $user = User::find($customerUserId);
+                $isPartial = (isset($request['is_partial']) && (int)$request['is_partial'] === 1);
+                $requiredWalletBalance = $isPartial ? round($totalBookingAmount * 0.25, 2) : $totalBookingAmount;
+                if (!$user || (float)$user->wallet_balance < (float)$requiredWalletBalance) {
+                    return response()->json(response_formatter(INSUFFICIENT_WALLET_BALANCE_400), 400);
+                }
                 $response = $this->placeBookingRequest(userId: $customerUserId, request: $request, transactionId: 'wallet_payment', newUserInfo: $newUserInfo, additionalData: $additionalData);
             } else {
                 $postBid = PostBid::with(['post'])
@@ -210,7 +216,10 @@ class BookingController extends Controller
 
                 $user = User::find($customerUserId);
                 $tax = !is_null($data['service_tax']) ? round((($data['price'] * $data['service_tax']) / 100) * 1, 2) : 0;
-                if (isset($user) && $user->wallet_balance < ($postBid->offered_price + $tax)) {
+                $bidTotal = (float)($postBid->offered_price + $tax);
+                $isPartial = (isset($request['is_partial']) && (int)$request['is_partial'] === 1);
+                $requiredWalletBalance = $isPartial ? round($bidTotal * 0.25, 2) : $bidTotal;
+                if (isset($user) && (float)$user->wallet_balance < (float)$requiredWalletBalance) {
                     return response()->json(response_formatter(INSUFFICIENT_WALLET_BALANCE_400), 400);
                 }
 
@@ -977,9 +986,6 @@ class BookingController extends Controller
                 return response()->json(response_formatter(INSUFFICIENT_WALLET_BALANCE_400), 400);
             }
 
-            $user->wallet_balance -= $amountToPay;
-            $user->save();
-
             if ($hasPartialPayments && $remainingDue > 0) {
                 $booking->booking_partial_payments()->update(['due_amount' => 0]);
                 BookingPartialPayment::create([
@@ -995,7 +1001,7 @@ class BookingController extends Controller
                 'transaction_id' => 'wallet-payment',
                 'is_paid' => 1
             ]);
-            placeBookingTransactionForWalletPayment($booking);
+            placeBookingTransactionForPartialWallet($booking, $amountToPay);
 
             if ($car_booking) {
                 $car_booking->update([

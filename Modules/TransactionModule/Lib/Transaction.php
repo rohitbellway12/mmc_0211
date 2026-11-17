@@ -258,6 +258,76 @@ if (!function_exists('placeBookingTransactionForWalletPayment')) {
     }
 }
 
+if (!function_exists('placeBookingTransactionForPartialWallet')) {
+    function placeBookingTransactionForPartialWallet($booking, $amount = null): void
+    {
+        $admin_user = User::where('user_type', ADMIN_USER_TYPES[0])->first();
+        if (!$admin_user) return;
+        $admin_user_id = $admin_user->id;
+
+        if (is_null($amount) || (float)$amount <= 0) {
+            $latestPartial = \Modules\BookingModule\Entities\BookingPartialPayment::where('booking_id', $booking['id'] ?? $booking->id)
+                ->where('paid_with', 'like', '%wallet%')
+                ->latest()
+                ->first();
+            $amount = $latestPartial ? (float)$latestPartial->paid_amount : round((float)($booking['total_booking_amount'] ?? $booking->total_booking_amount) * 0.25, 2);
+        }
+
+        DB::transaction(function () use ($booking, $admin_user_id, $amount) {
+            $bookingId = $booking['id'] ?? $booking->id;
+            $customerId = $booking['customer_id'] ?? $booking->customer_id;
+            $isGuest = $booking['is_guest'] ?? $booking->is_guest ?? 0;
+
+            // Admin account update
+            $account = Account::where('user_id', $admin_user_id)->first();
+            if ($account) {
+                $account->balance_pending += $amount;
+                $account->save();
+            }
+
+            // Admin transaction
+            Transaction::create([
+                'ref_trx_id' => null,
+                'booking_id' => $bookingId,
+                'trx_type' => TRX_TYPE['booking_amount'],
+                'debit' => 0,
+                'credit' => $amount,
+                'balance' => $account ? $account->balance_pending : 0,
+                'from_user_id' => $customerId,
+                'to_user_id' => $admin_user_id,
+                'from_user_account' => null,
+                'to_user_account' => ACCOUNT_STATES[0]['value'],
+                'is_guest' => $isGuest
+            ]);
+
+            // Customer wallet update
+            $user = User::find($customerId);
+            if ($user) {
+                if ($user->wallet_balance >= $amount) {
+                    $user->wallet_balance -= $amount;
+                } else {
+                    $user->wallet_balance = 0;
+                }
+                $user->save();
+
+                // Customer transaction (wallet debit)
+                Transaction::create([
+                    'ref_trx_id' => null,
+                    'booking_id' => $bookingId,
+                    'trx_type' => WALLET_TRX_TYPE['wallet_payment'],
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'balance' => $user->wallet_balance,
+                    'from_user_id' => $customerId,
+                    'to_user_id' => $customerId,
+                    'from_user_account' => null,
+                    'to_user_account' => 'user_wallet'
+                ]);
+            }
+        });
+    }
+}
+
 
 //============ Booking Edit ============
 if (!function_exists('removeBookingServiceTransactionForDigitalPayment')) {

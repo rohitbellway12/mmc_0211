@@ -246,6 +246,8 @@ trait BookingTrait
                 if ($booking->booking_partial_payments->isNotEmpty()) {
                     if ($booking['payment_method'] == 'cash_after_service') {
                         placeBookingTransactionForPartialCas($booking);  // waller + CAS payment
+                    } elseif ($booking['payment_method'] == 'wallet_payment') {
+                        placeBookingTransactionForPartialWallet($booking, $paidAmount ?? null);
                     } elseif ($booking['payment_method'] != 'wallet_payment') {
                         placeBookingTransactionForPartialDigital($booking);  //wallet + digital payment
                     }
@@ -974,6 +976,8 @@ trait BookingTrait
             if ($booking->booking_partial_payments->isNotEmpty()) {
                 if ($booking['payment_method'] == 'cash_after_service') {
                     placeBookingTransactionForPartialCas($booking);  // waller + CAS payment
+                } elseif ($booking['payment_method'] == 'wallet_payment') {
+                    placeBookingTransactionForPartialWallet($booking);
                 } elseif ($booking['payment_method'] != 'wallet_payment') {
                     placeBookingTransactionForPartialDigital($booking);  //wallet + digital payment
                 }

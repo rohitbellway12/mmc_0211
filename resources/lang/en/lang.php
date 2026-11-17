@@ -7450,4 +7450,5 @@ _Message' => 'Customer notification for provider bid offer
   'Minimum 70 loyalty points are required to transfer to wallet' => 'Minimum 70 loyalty points are required to transfer to wallet',
   'Insufficient loyalty points. Your current point balance is ' => 'Insufficient loyalty points. Your current point balance is ',
   'Insufficient loyalty points. Your current point balance is 200' => 'Insufficient loyalty points. Your current point balance is 200',
+  'Insufficient loyalty points. Your current point balance is 0' => 'Insufficient loyalty points. Your current point balance is 0',
 );

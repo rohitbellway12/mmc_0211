@@ -289,12 +289,9 @@ class BookingEstimateController extends Controller
                 $customerUser = User::find($customerId);
                 $walletChargeAmount = $isPartial ? $amountToPay : $totalAmount;
 
-                if (!$customerUser || $customerUser->wallet_balance < $walletChargeAmount) {
+                if (!$customerUser || (float)$customerUser->wallet_balance < (float)$walletChargeAmount) {
                     throw new \Exception(translate('Insufficient wallet balance'));
                 }
-
-                $customerUser->wallet_balance -= $walletChargeAmount;
-                $customerUser->save();
 
                 $tranId = 'wallet_payment_' . time();
                 $booking->transaction_id = $tranId;
@@ -324,6 +321,8 @@ class BookingEstimateController extends Controller
                     }
                 }
                 $booking->save();
+
+                placeBookingTransactionForPartialWallet($booking, $walletChargeAmount);
             }
 
             // Update estimate status
