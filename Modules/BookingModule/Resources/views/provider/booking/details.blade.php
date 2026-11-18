@@ -1133,7 +1133,7 @@
 @push('script')
 
     <script src="{{ asset('public/assets/admin-module/js/spartan-multi-image-picker.js') }}"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ business_config('google_map', 'third_party')?->live_values['map_api_key_client'] }}&libraries=places&v=3.45.8"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ business_config('google_map', 'third_party')?->live_values['map_api_key_client'] }}&libraries=places"></script>
 
     <script type="text/javascript">
         "use strict";

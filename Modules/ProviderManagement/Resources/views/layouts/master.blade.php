@@ -579,105 +579,107 @@
 
             @if ($admin_order_notification_type == 'firebase')
                 @php($fcm_credentials = business_config('firebase_message_config', 'third_party')->live_values ?? [])
-                @if (!empty($fcm_credentials))
-                    var firebaseConfig = {
-                        apiKey: "{{ isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : '' }}",
-                        authDomain: "{{ isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : '' }}",
-                        projectId: "{{ isset($fcm_credentials['projectId']) ? $fcm_credentials['projectId'] : '' }}",
-                        storageBucket: "{{ isset($fcm_credentials['storageBucket']) ? $fcm_credentials['storageBucket'] : '' }}",
-                        messagingSenderId: "{{ isset($fcm_credentials['messagingSenderId']) ? $fcm_credentials['messagingSenderId'] : '' }}",
-                        appId: "{{ isset($fcm_credentials['appId']) ? $fcm_credentials['appId'] : '' }}",
-                        measurementId: "{{ isset($fcm_credentials['measurementId']) ? $fcm_credentials['measurementId'] : '' }}"
-                    };
-                    firebase.initializeApp(firebaseConfig);
-                    const messaging = firebase.messaging();
+                @if (!empty($fcm_credentials) && !empty($fcm_credentials['status']) && !empty($fcm_credentials['apiKey']))
+                    try {
+                        var firebaseConfig = {
+                            apiKey: "{{ isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : '' }}",
+                            authDomain: "{{ isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : '' }}",
+                            projectId: "{{ isset($fcm_credentials['projectId']) ? $fcm_credentials['projectId'] : '' }}",
+                            storageBucket: "{{ isset($fcm_credentials['storageBucket']) ? $fcm_credentials['storageBucket'] : '' }}",
+                            messagingSenderId: "{{ isset($fcm_credentials['messagingSenderId']) ? $fcm_credentials['messagingSenderId'] : '' }}",
+                            appId: "{{ isset($fcm_credentials['appId']) ? $fcm_credentials['appId'] : '' }}",
+                            measurementId: "{{ isset($fcm_credentials['measurementId']) ? $fcm_credentials['measurementId'] : '' }}"
+                        };
+                        firebase.initializeApp(firebaseConfig);
+                        const messaging = firebase.messaging();
 
-                    function startFCM() {
-                        messaging
-                            .requestPermission()
-                            .then(function() {
-                                return messaging.getToken();
-                            })
-                            .then(function(token) {
-                                subscribeTokenToBackend(token,
-                                    'demandium_provider_{{ auth()->user()->provider->zone_id }}_{{ auth()->user()->provider->id }}_booking_message'
-                                );
-                                @if ($serviceAtProviderPlace)
-                                    @if (in_array('customer', $serviceLocations))
-                                        subscribeTokenToBackend(token,
-                                            'demandium_provider_{{ auth()->user()->provider->zone_id }}_customer_booking_message'
-                                        );
-                                    @endif
-                                    @if (in_array('provider', $serviceLocations))
-                                        subscribeTokenToBackend(token,
-                                            'demandium_provider_{{ auth()->user()->provider->zone_id }}_provider_booking_message'
-                                        );
-                                    @endif
-                                @else
+                        function startFCM() {
+                            messaging
+                                .requestPermission()
+                                .then(function() {
+                                    return messaging.getToken();
+                                })
+                                .then(function(token) {
                                     subscribeTokenToBackend(token,
-                                        'demandium_provider_{{ auth()->user()->provider->zone_id }}_booking_message'
+                                        'demandium_provider_{{ auth()->user()->provider->zone_id }}_{{ auth()->user()->provider->id }}_booking_message'
                                     );
-                                @endif
-                            }).catch(function(error) {
-                                console.error('Error getting permission or token:', error);
-                            });
-                    }
-
-                    function subscribeTokenToBackend(token, topic) {
-                        fetch('{{ url('provider/subscribeToTopic') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({
-                                token: token,
-                                topic: topic
-                            })
-                        }).then(response => {
-                            if (response.status < 200 || response.status >= 400) {
-                                return response.text().then(text => {
-                                    throw new Error(
-                                        `Error subscribing to topic: ${response.status} - ${text}`);
+                                    @if ($serviceAtProviderPlace)
+                                        @if (in_array('customer', $serviceLocations))
+                                            subscribeTokenToBackend(token,
+                                                'demandium_provider_{{ auth()->user()->provider->zone_id }}_customer_booking_message'
+                                            );
+                                        @endif
+                                        @if (in_array('provider', $serviceLocations))
+                                            subscribeTokenToBackend(token,
+                                                'demandium_provider_{{ auth()->user()->provider->zone_id }}_provider_booking_message'
+                                            );
+                                        @endif
+                                    @else
+                                        subscribeTokenToBackend(token,
+                                            'demandium_provider_{{ auth()->user()->provider->zone_id }}_booking_message'
+                                        );
+                                    @endif
+                                }).catch(function(error) {
+                                    console.error('Error getting permission or token:', error);
                                 });
-                            }
-                            console.log(`Subscribed to "${topic}"`);
-                        }).catch(error => {
-                            console.error('Subscription error:', error);
-                        });
-                    }
-                    messaging.onMessage(function(payload) {
-                        console.log(payload.data);
-                        playAudio();
-                        Swal.fire({
-                            title: '{{ translate('New_Notification') }}',
-                            text: "{{ translate('You_have_new_booking_arrived') }}",
-                            icon: 'info',
-                            showCloseButton: true,
-                            showCancelButton: false,
-                            focusConfirm: false,
-                            confirmButtonText: '{{ translate('Show_Bookings') }}',
-                        }).then((result) => {
-                            if (result.value) {
-                                playAudio(false);
-                                checkBooking(payload.data
-                                    .booking_id
-                                    ); // In firebase, we might not have the count easily, but passing something non-null helps. 
-                                // Actually, payload.data might have something. But for now, just ensure it's not NaN.
-                                location.href =
-                                    "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
-                            } else if (result.dismiss === 'close') {
-                                playAudio(false);
-                                checkBooking(payload.data.booking_id);
-                                location.href =
-                                    "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
-                            }
-                        })
+                        }
 
-                    });
-                    startFCM();
-                @else
-                    console.error('Firebase credentials are not available. Notifications will not work.');
+                        function subscribeTokenToBackend(token, topic) {
+                            fetch('{{ url('provider/subscribeToTopic') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({
+                                    token: token,
+                                    topic: topic
+                                })
+                            }).then(response => {
+                                if (response.status < 200 || response.status >= 400) {
+                                    return response.text().then(text => {
+                                        throw new Error(
+                                            `Error subscribing to topic: ${response.status} - ${text}`);
+                                    });
+                                }
+                                console.log(`Subscribed to "${topic}"`);
+                            }).catch(error => {
+                                console.error('Subscription error:', error);
+                            });
+                        }
+                        messaging.onMessage(function(payload) {
+                            console.log(payload.data);
+                            playAudio();
+                            Swal.fire({
+                                title: '{{ translate('New_Notification') }}',
+                                text: "{{ translate('You_have_new_booking_arrived') }}",
+                                icon: 'info',
+                                showCloseButton: true,
+                                showCancelButton: false,
+                                focusConfirm: false,
+                                confirmButtonText: '{{ translate('Show_Bookings') }}',
+                            }).then((result) => {
+                                if (result.value) {
+                                    playAudio(false);
+                                    checkBooking(payload.data
+                                        .booking_id
+                                        ); // In firebase, we might not have the count easily, but passing something non-null helps. 
+                                    // Actually, payload.data might have something. But for now, just ensure it's not NaN.
+                                    location.href =
+                                        "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
+                                } else if (result.dismiss === 'close') {
+                                    playAudio(false);
+                                    checkBooking(payload.data.booking_id);
+                                    location.href =
+                                        "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
+                                }
+                            })
+
+                        });
+                        startFCM();
+                    } catch (fcmErr) {
+                        console.warn('FCM initialization skipped or failed:', fcmErr);
+                    }
                 @endif
             @endif
         @endif

@@ -715,7 +715,8 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
 
         @if($admin_order_notification_type == 'firebase')
             @php($fcm_credentials = business_config('firebase_message_config', 'third_party')->live_values ?? [])
-                @if(!empty($fcm_credentials))
+            @if(!empty($fcm_credentials) && !empty($fcm_credentials['status']) && !empty($fcm_credentials['apiKey']))
+                try {
                     var firebaseConfig = {
                         apiKey: "{{isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : ''}}",
                         authDomain: "{{isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : ''}}",
@@ -793,9 +794,10 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
 
                     });
                     startFCM();
-                @else
-                    console.error('Firebase credentials are not available. Notifications will not work.');
-                @endif
+                } catch (fcmErr) {
+                    console.warn('FCM initialization skipped or failed:', fcmErr);
+                }
+            @endif
         @endif
     @endif
 </script>

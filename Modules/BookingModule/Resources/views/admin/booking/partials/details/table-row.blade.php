@@ -24,12 +24,3 @@
     <input type="hidden" name="service_ids[]" value="{{$data['service_id']}}">
     <input type="hidden" name="variant_keys[]" value="{{$data['variant_key']}}">
 </tr>
-
-<script>
-    "use strict";
-
-    $(".remove-service-row").on('click', function (){
-        let row = $(this).data('row');
-        removeServiceRow(row)
-    })
-</script>
