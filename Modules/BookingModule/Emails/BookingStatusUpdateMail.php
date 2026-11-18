@@ -47,22 +47,24 @@ class BookingStatusUpdateMail extends Mailable
                 'statusLabel' => $statusLabel
             ]);
 
-        // Attach invoice if booking is completed or accepted
-        try {
-            $bookingWithDetails = Booking::with([
-                'detail.service' => fn($q) => $q->withTrashed(),
-                'detail.variation',
-                'customer',
-                'provider.owner',
-                'serviceman.user'
-            ])->find($this->booking->id) ?? $this->booking;
+        // Attach invoice only if booking is completed
+        if ($this->bookingStatus === 'completed') {
+            try {
+                $bookingWithDetails = Booking::with([
+                    'detail.service' => fn($q) => $q->withTrashed(),
+                    'detail.variation',
+                    'customer',
+                    'provider.owner',
+                    'serviceman.user'
+                ])->find($this->booking->id) ?? $this->booking;
 
-            $pdf = PDF::loadView('bookingmodule::admin.booking.invoice', ['booking' => $bookingWithDetails]);
-            if ($pdf) {
-                $mail->attachData($pdf->output(), "Booking-Invoice-#{$readableId}.pdf");
+                $pdf = PDF::loadView('bookingmodule::admin.booking.invoice', ['booking' => $bookingWithDetails]);
+                if ($pdf) {
+                    $mail->attachData($pdf->output(), "Booking-Invoice-#{$readableId}.pdf");
+                }
+            } catch (\Exception $e) {
+                info("PDF Invoice generation skipped for email: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            info("PDF Invoice generation skipped for email: " . $e->getMessage());
         }
 
         return $mail;

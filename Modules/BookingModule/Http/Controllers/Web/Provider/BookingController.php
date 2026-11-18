@@ -25,6 +25,7 @@ use Mockery\Exception;
 use Modules\BookingModule\Entities\Booking;
 use Modules\BookingModule\Entities\BookingDetail;
 use Modules\BookingModule\Entities\BookingIgnore;
+use Modules\BookingModule\Entities\BookingPartialPayment;
 use Modules\BookingModule\Entities\BookingRepeat;
 use Modules\BookingModule\Entities\BookingRepeatDetails;
 use Modules\BookingModule\Entities\BookingRepeatHistory;
@@ -744,7 +745,7 @@ class BookingController extends Controller
             $booking->booking_status = $request['booking_status'];
             $booking->provider_id = $request->user()->provider->id;
 
-            $bookingStatusHistory = $this->bookingStatusHistory;
+            $bookingStatusHistory = new BookingStatusHistory;
             $bookingStatusHistory->booking_id = $bookingId;
             $bookingStatusHistory->changed_by = $request->user()->id;
             $bookingStatusHistory->booking_status = $request['booking_status'];
@@ -756,7 +757,7 @@ class BookingController extends Controller
                         $bookingRepeat->serviceman_id = null;
                         $bookingRepeat->save();
 
-                        $bookingRepeatStatusHistory = new $this->bookingStatusHistory;
+                        $bookingRepeatStatusHistory = new BookingStatusHistory;
                         $bookingRepeatStatusHistory->booking_id = $bookingId;
                         $bookingRepeatStatusHistory->changed_by = $request->user()->id;
                         $bookingRepeatStatusHistory->booking_status = $request['booking_status'];
@@ -774,7 +775,7 @@ class BookingController extends Controller
                     $bookingStatusHistory->save();
                 });
 
-                self::checkBooking($booking->id);
+                $this->checkBooking($booking->id);
 
                 return response()->json(response_formatter(DEFAULT_STATUS_UPDATE_200), 200);
             }
@@ -1005,20 +1006,46 @@ class BookingController extends Controller
      */
     public function paymentUpdate($bookingId, Request $request): JsonResponse
     {
-        Validator::make($request->all(), [
-            'payment_status' => 'required|in:1,0',
-        ]);
+        $paymentStatus = $request->input('payment_status', $request->input('paymentStatus'));
 
-        $booking = $this->booking->where('id', $bookingId)->where(function ($query) use ($request) {
+        $booking = $this->booking->with('booking_partial_payments')->where('id', $bookingId)->where(function ($query) use ($request) {
             return $query->where('provider_id', $request->user()->provider->id)->orWhereNull('provider_id');
         })->first();
 
         $repeatBooking = $this->bookingRepeat->where('id', $bookingId)->where('provider_id', $request->user()->provider->id)->first();
 
         if (isset($booking)) {
-            $booking->is_paid = $request->payment_status == '1' ? 1 : 0;
+            $isPaid = ($paymentStatus == '1' || $paymentStatus === 1 || $paymentStatus === 'true') ? 1 : 0;
+            $booking->is_paid = $isPaid;
 
-            if ($booking->isDirty('is_paid')) {
+            $hasPartialDue = $booking->booking_partial_payments->isNotEmpty() && $booking->booking_partial_payments->sum('due_amount') > 0;
+
+            if ($booking->isDirty('is_paid') || ($isPaid == 1 && $hasPartialDue)) {
+                if ($isPaid == 1 && $booking->booking_partial_payments->isNotEmpty()) {
+                    $dueAmount = $booking->booking_partial_payments->sum('due_amount');
+                    if ($dueAmount > 0) {
+                        $booking->booking_partial_payments()->update(['due_amount' => 0]);
+
+                        $bookingPartialPayment = new BookingPartialPayment;
+                        $bookingPartialPayment->booking_id = $booking->id;
+                        $bookingPartialPayment->paid_with = 'cash';
+                        $bookingPartialPayment->paid_amount = $dueAmount;
+                        $bookingPartialPayment->due_amount = 0;
+                        $bookingPartialPayment->save();
+                    }
+                } elseif ($isPaid == 0 && $booking->booking_partial_payments->isNotEmpty()) {
+                    $settlement = $booking->booking_partial_payments()->where('paid_with', 'cash')->latest()->first();
+                    if ($settlement) {
+                        $revertAmount = $settlement->paid_amount;
+                        $settlement->delete();
+                        $firstPartial = $booking->booking_partial_payments()->where('id', '!=', $settlement->id)->first();
+                        if ($firstPartial) {
+                            $firstPartial->due_amount = $revertAmount;
+                            $firstPartial->save();
+                        }
+                    }
+                }
+
                 $booking->save();
                 return response()->json(response_formatter(DEFAULT_STATUS_UPDATE_200), 200);
             }
@@ -1026,7 +1053,7 @@ class BookingController extends Controller
         }
 
         if (isset($repeatBooking)) {
-            $repeatBooking->is_paid = $request->payment_status == '1' ? 1 : 0;
+            $repeatBooking->is_paid = ($paymentStatus == '1' || $paymentStatus === 1 || $paymentStatus === 'true') ? 1 : 0;
 
             if ($repeatBooking->isDirty('is_paid')) {
                 $repeatBooking->save();

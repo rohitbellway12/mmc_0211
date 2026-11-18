@@ -388,7 +388,7 @@
                                 <div class="on-off-toggle">
                                     <input class="on-off-toggle__input {{$booking->booking_status == 'canceled' ? 'canceled_booking' : 'switcher_input'}}"
                                            value="{{$booking['is_paid'] ? '1' : '0'}}"
-                                           {{$booking['is_paid'] ? 'checked disabled' : ''}} type="checkbox"
+                                           {{$booking['is_paid'] ? 'checked' : ''}} type="checkbox"
                                            id="payment_status"/>
                                     <label for="payment_status" class="on-off-toggle__slider">
                                         <span class="on-off-toggle__on">
@@ -1261,16 +1261,16 @@
         $('#payment_status').on('click', function (event) {
             if(bookingStatus === 'canceled'){
                 event.preventDefault();
-                canceled_booking()
-            }else {
-                let paymentStatus = $(this).is(':checked') === true ? 1 : 0;
-                payment_status_change(paymentStatus)
+                canceled_booking();
+            } else {
+                let paymentStatus = $(this).is(':checked') ? 1 : 0;
+                payment_status_change(paymentStatus);
             }
-        })
+        });
 
         $('.resend-otp').on('click', function () {
-            resend_otp()
-        })
+            resend_otp();
+        });
 
         function canceled_booking() {
             toastr.info('contact with admin to change the status', {
@@ -1280,8 +1280,8 @@
         }
 
         function payment_status_change(paymentStatus) {
-            let route = '{{route('provider.booking.payment_update',[$booking->id])}}' + '?paymentStatus=' + paymentStatus;
-            update_booking_details(route, '{{translate('want_to_update_status')}}', 'payment_status', paymentStatus);
+            let route = '{{route('provider.booking.payment_update',[$booking->id])}}' + '?payment_status=' + paymentStatus;
+            update_booking_details(route, '{{translate('want_to_update_status')}}', 'payment_status', paymentStatus, 'PUT', !paymentStatus);
         }
 
         @if($booking->booking_status == 'pending')
@@ -1306,13 +1306,17 @@
             update_booking_details(route, '{{translate('want_to_update_status')}}', 'service_schedule__submit', service_schedule);
         });
 
+        let previousBookingStatus = $("#booking_status").val();
         $("#booking_status").change(function () {
-            var booking_status = $("#booking_status option:selected").val();
-            if (parseInt(booking_status) !== 0) {
+            var booking_status = $(this).val();
+            if (booking_status && booking_status !== '0') {
                 var route = '{{route('provider.booking.status_update',[$booking->id])}}' + '?booking_status=' + booking_status;
-                update_booking_details(route, '{{translate('want_to_update_status')}}', 'booking_status', booking_status, 'PUT');
+                update_booking_details(route, '{{translate('want_to_update_status')}}', 'booking_status', booking_status, 'PUT', previousBookingStatus);
             } else {
                 toastr.error('{{translate('choose_proper_status')}}');
+                if (previousBookingStatus) {
+                    $('#booking_status').val(previousBookingStatus).trigger('change.select2');
+                }
             }
         });
 
@@ -1333,19 +1337,7 @@
             }
         });
 
-        $("#payment_status").change(function () {
-            var payment_status = $("#payment_status option:selected").val();
-            if (parseInt(payment_status) !== 0) {
-                var route = '{{route('provider.booking.payment_update',[$booking->id])}}' + '?payment_status=' + payment_status;
-
-                update_booking_details(route, '{{translate('want_to_update_status')}}', 'payment_status', payment_status);
-            } else {
-                toastr.error('{{translate('choose_proper_payment_status')}}');
-            }
-        });
-
-
-        function update_booking_details(route, message, componentId, updatedValue, type = 'get') {
+        function update_booking_details(route, message, componentId, updatedValue, type = 'get', previousValue = null) {
             Swal.fire({
                 title: "{{translate('are_you_sure')}}?",
                 text: message,
@@ -1390,13 +1382,16 @@
                                             $('#otp_form').on('submit', function (e) {
                                                 e.preventDefault();
                                                 var formData = $(this).serialize(); // Serialize the form data
-                                                proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT', formData);
+                                                proceed_with_main_ajax_request(route, componentId, updatedValue, type, formData, previousValue);
                                             });
                                         } else {
-                                            proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT');
+                                            proceed_with_main_ajax_request(route, componentId, updatedValue, type, null, previousValue);
                                         }
                                     },
                                     error: function (error) {
+                                        if (componentId === 'booking_status' && previousValue) {
+                                            $('#booking_status').val(previousValue).trigger('change.select2');
+                                        }
                                     }
                                 });
                             });
@@ -1410,10 +1405,10 @@
                                     $('#otp_form').on('submit', function (e) {
                                         e.preventDefault();
                                         var formData = $(this).serialize();
-                                        proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT', formData);
+                                        proceed_with_main_ajax_request(route, componentId, updatedValue, type, formData, previousValue);
                                     });
                                 } else {
-                                    proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT');
+                                    proceed_with_main_ajax_request(route, componentId, updatedValue, type, null, previousValue);
                                 }
                             });
 
@@ -1423,19 +1418,25 @@
                             $('#otp_form').on('submit', function (e) {
                                 e.preventDefault();
                                 var formData = $(this).serialize();
-                                proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT', formData);
+                                proceed_with_main_ajax_request(route, componentId, updatedValue, type, formData, previousValue);
                             });
                         } else {
-                            proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT');
+                            proceed_with_main_ajax_request(route, componentId, updatedValue, type, null, previousValue);
                         }
                     } else {
-                        proceed_with_main_ajax_request(route, componentId, updatedValue, 'PUT');
+                        proceed_with_main_ajax_request(route, componentId, updatedValue, type, null, previousValue);
+                    }
+                } else {
+                    if (componentId === 'booking_status' && previousValue) {
+                        $('#booking_status').val(previousValue).trigger('change.select2');
+                    } else if (componentId === 'payment_status') {
+                        $('#payment_status').prop('checked', updatedValue !== 1);
                     }
                 }
             });
         }
 
-        function proceed_with_main_ajax_request(route, componentId, updatedValue, type = 'get', formData = null) {
+        function proceed_with_main_ajax_request(route, componentId, updatedValue, type = 'get', formData = null, previousValue = null) {
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -1447,16 +1448,43 @@
                 dataType: 'json',
                 data: formData,
                 beforeSend: function () {
+                    Swal.fire({
+                        title: "{{translate('updating')}}...",
+                        text: "{{translate('please_wait')}}",
+                        allowOutsideClick: false,
+                        showConfirmButton: false
+                    });
+                    if (typeof Swal.showLoading === 'function') {
+                        Swal.showLoading();
+                    }
                 },
                 success: function (data) {
-                    update_component(componentId, updatedValue);
-                    toastr.success(data.message, {
-                        CloseButton: true,
-                        ProgressBar: true
-                    });
+                    Swal.close();
+                    if (data.response_code === 'no_changes_found_200') {
+                        toastr.info(data.message || '{{translate('no_changes_found')}}');
+                    } else {
+                        update_component(componentId, updatedValue);
+                        toastr.success(data.message, {
+                            CloseButton: true,
+                            ProgressBar: true
+                        });
+                    }
                     setTimeout(function () {
                         location.reload();
-                    }, 1000);
+                    }, 500);
+                },
+                error: function (xhr) {
+                    Swal.close();
+                    let errorMsg = '{{ translate('something_went_wrong') }}';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    toastr.error(errorMsg);
+                    if (componentId === 'booking_status' && previousValue) {
+                        $('#booking_status').val(previousValue).trigger('change.select2');
+                    } else if (componentId === 'payment_status') {
+                        $('#payment_status').prop('checked', updatedValue !== 1);
+                    }
                 },
                 complete: function () {
                 },
@@ -1484,10 +1512,11 @@
                 }
 
             } else if (componentId === 'payment_status') {
-                $("#payment_status__span").html(updatedValue);
-                if (updatedValue === 'paid') {
+                let isPaidText = (updatedValue === 1 || updatedValue === '1' || updatedValue === 'paid') ? '{{translate('Paid')}}' : '{{translate('Unpaid')}}';
+                $("#payment_status__span").html(isPaidText);
+                if (updatedValue === 1 || updatedValue === '1' || updatedValue === 'paid') {
                     $("#payment_status__span").addClass('text-success').removeClass('text-danger');
-                } else if (updatedValue === 'unpaid') {
+                } else {
                     $("#payment_status__span").addClass('text-danger').removeClass('text-success');
                 }
 

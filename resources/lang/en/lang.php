@@ -7451,4 +7451,8 @@ _Message' => 'Customer notification for provider bid offer
   'Insufficient loyalty points. Your current point balance is ' => 'Insufficient loyalty points. Your current point balance is ',
   'Insufficient loyalty points. Your current point balance is 200' => 'Insufficient loyalty points. Your current point balance is 200',
   'Insufficient loyalty points. Your current point balance is 0' => 'Insufficient loyalty points. Your current point balance is 0',
+  'The car image must be an image.' => 'The car image must be an image.',
+  'no_changes_found' => 'No changes found',
+  'updating' => 'Updating',
+  'please_wait' => 'Please wait',
 );
