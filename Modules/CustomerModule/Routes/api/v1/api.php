@@ -38,6 +38,17 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'namespace' => 'Api\V1\Admin'
     });
 });
 
+Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Api\V1\Provider', 'middleware' => ['auth:api']], function () {
+    Route::group(['prefix' => 'customer', 'as' => 'customer.'], function () {
+        Route::get('list', 'CustomerController@index')->name('list');
+        Route::post('store', 'CustomerController@store')->name('store');
+        Route::get('detail/{id}', 'CustomerController@show')->name('detail');
+        Route::get('bookings/{id}', 'CustomerController@bookings')->name('bookings');
+        Route::get('estimates/{id}', 'CustomerController@estimates')->name('estimates');
+        Route::get('addresses/{id}', 'CustomerController@addresses')->name('addresses');
+    });
+});
+
 Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V1\Customer'], function () {
 
     Route::group(['prefix' => 'config'], function () {
@@ -86,4 +97,3 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
     Route::post('subscribe-newsletter', [SubscribeNewsletterController::class, 'subscribeNewsletter'])->name('subscribe-newsletter');
 
 });
-

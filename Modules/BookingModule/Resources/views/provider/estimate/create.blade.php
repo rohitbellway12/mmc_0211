@@ -82,7 +82,13 @@
                             <div class="card-body p-4">
                                 {{-- Quick Existing Customer Select --}}
                                 <div class="mb-3">
-                                    <label class="form-label fz-13 text-muted">{{ translate('Quick_Select_Existing_Customer (Optional)') }}</label>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="form-label fz-13 text-muted mb-0">{{ translate('Quick_Select_Existing_Customer (Optional)') }}</label>
+                                        <a href="{{ route('provider.customer.create') }}" target="_blank" class="text-primary fz-12 fw-semibold d-inline-flex align-items-center gap-1">
+                                            <span class="material-icons fz-14">person_add</span>
+                                            {{ translate('Add_New_Customer') }}
+                                        </a>
+                                    </div>
                                     <select class="form-select" id="existing_customer_select">
                                         <option value="">{{ translate('-- Type or Select Existing Customer --') }}</option>
                                         @foreach($customers as $c)
@@ -102,6 +108,7 @@
                                                 }
                                             @endphp
                                             <option value="{{ $c->id }}"
+                                                    {{ request('customer_id') == $c->id ? 'selected' : '' }}
                                                     data-name="{{ $c->first_name }} {{ $c->last_name }}"
                                                     data-phone="{{ $c->phone }}"
                                                     data-email="{{ $c->email }}"
@@ -1155,6 +1162,11 @@
                     }
                 }
             });
+
+            // Auto-fill if a customer was pre-selected (e.g. from customer list / create)
+            if ($('#existing_customer_select').val()) {
+                $('#existing_customer_select').trigger('change');
+            }
 
             function updateCombinedCustomerAddress() {
                 let house = $('#customer_house').val() ? $('#customer_house').val() : '';

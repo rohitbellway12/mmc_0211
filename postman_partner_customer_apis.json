@@ -1,0 +1,338 @@
+{
+	"info": {
+		"_postman_id": "b3e9a781-4201-49fa-9cb2-4a0b2d3e1101",
+		"name": "MMC - Partner Customer Management APIs",
+		"description": "Postman Collection for Partner Customer Management (List, Create, Detail, Bookings, Estimates, Addresses). Requires an authenticated Provider with is_partner = 1.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{partner_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "1. Customer List & Search",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/list?limit=20&offset=1&search=&status=all",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"list"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "20",
+							"description": "Number of records per page (default: 20)"
+						},
+						{
+							"key": "offset",
+							"value": "1",
+							"description": "Page number (default: 1)"
+						},
+						{
+							"key": "search",
+							"value": "",
+							"description": "Filter by first name, last name, phone or email"
+						},
+						{
+							"key": "status",
+							"value": "all",
+							"description": "active, inactive or all"
+						}
+					]
+				},
+				"description": "Get paginated list of customers for partner with total bookings and estimates count."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Create New Customer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "first_name",
+							"value": "Aman",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "Verma",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "aman.verma@example.com",
+							"type": "text"
+						},
+						{
+							"key": "phone",
+							"value": "+919876543219",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "12345678",
+							"type": "text"
+						},
+						{
+							"key": "gender",
+							"value": "male",
+							"type": "text"
+						},
+						{
+							"key": "date_of_birth",
+							"value": "1998-05-15",
+							"type": "text"
+						},
+						{
+							"key": "profile_image",
+							"type": "file",
+							"src": [],
+							"description": "Optional profile picture (jpeg, jpg, png, max 10MB)"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/store",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"store"
+					]
+				},
+				"description": "Allows an authenticated partner (is_partner = 1) to register a new customer."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Customer Profile & Overview",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/detail/{{customer_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"detail",
+						"{{customer_id}}"
+					]
+				},
+				"description": "Get detailed customer profile, activity stats with this partner, recent addresses, bookings and quotations."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Customer Bookings History",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/bookings/{{customer_id}}?limit=20&offset=1&status=all&search=",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"bookings",
+						"{{customer_id}}"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "20",
+							"description": "Records per page"
+						},
+						{
+							"key": "offset",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "status",
+							"value": "all",
+							"description": "completed, ongoing, canceled, accepted, or all"
+						},
+						{
+							"key": "search",
+							"value": "",
+							"description": "Filter by readable booking ID"
+						}
+					]
+				},
+				"description": "Get paginated bookings of this customer placed with this specific partner."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Customer Quotations History",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/estimates/{{customer_id}}?limit=20&offset=1&status=all&search=",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"estimates",
+						"{{customer_id}}"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "20",
+							"description": "Records per page"
+						},
+						{
+							"key": "offset",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "status",
+							"value": "all",
+							"description": "pending, accepted, declined, or all"
+						},
+						{
+							"key": "search",
+							"value": "",
+							"description": "Filter by estimate number or vehicle model"
+						}
+					]
+				},
+				"description": "Get paginated quotation / estimate requests sent to this customer by this partner."
+			},
+			"response": []
+		},
+		{
+			"name": "6. Customer Saved Addresses",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/provider/customer/addresses/{{customer_id}}?limit=20&offset=1&search=",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"provider",
+						"customer",
+						"addresses",
+						"{{customer_id}}"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "20",
+							"description": "Records per page"
+						},
+						{
+							"key": "offset",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "search",
+							"value": "",
+							"description": "Filter by street, city, zip code"
+						}
+					]
+				},
+				"description": "Get paginated saved addresses of the customer with real-time text filter."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost/mmc",
+			"type": "string"
+		},
+		{
+			"key": "partner_token",
+			"value": "YOUR_BEARER_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "40641a1c-1ddc-45dd-8836-e8021e7ebe40",
+			"type": "string"
+		}
+	]
+}

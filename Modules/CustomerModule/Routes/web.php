@@ -65,6 +65,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin',
     });
 });
 
+Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Web\Provider', 'middleware' => ['provider']], function () {
+    Route::group(['prefix' => 'customer', 'as' => 'customer.'], function () {
+        Route::get('list', 'CustomerController@index')->name('list');
+        Route::get('create', 'CustomerController@create')->name('create');
+        Route::post('store', 'CustomerController@store')->name('store');
+        Route::get('detail/{id}', 'CustomerController@show')->name('detail');
+    });
+});
+
 
 
 Route::get('/clear-cache', function () {

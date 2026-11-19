@@ -195,6 +195,27 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                     </li>
                 </ul>
             </li>
+
+            <li class="has-sub-item {{ request()->is('provider/customer/*') ? 'sub-menu-opened' : '' }}">
+                <a href="#" class="{{ request()->is('provider/customer/*') ? 'active-menu' : '' }}">
+                    <span class="material-icons" title="{{ translate('Customers') }}">people</span>
+                    <span class="link-title">{{ translate('Customers') }}</span>
+                </a>
+                <ul class="nav sub-menu">
+                    <li>
+                        <a href="{{ route('provider.customer.create') }}"
+                            class="{{ request()->is('provider/customer/create') ? 'active-menu' : '' }}">
+                            <span class="link-title">{{ translate('Add_New_Customer') }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('provider.customer.list') }}"
+                            class="{{ request()->is('provider/customer/list') || request()->is('provider/customer/detail*') ? 'active-menu' : '' }}">
+                            <span class="link-title">{{ translate('Customer_List') }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             @endif
 
             {{-- Help & Support Commented Out

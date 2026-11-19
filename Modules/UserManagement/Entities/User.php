@@ -185,6 +185,11 @@ class User extends Authenticatable
         return $this->hasMany(\Modules\CustomerModule\Entities\CustomerDocument::class, 'user_id')->latest();
     }
 
+    public function estimates(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\BookingModule\Entities\BookingEstimate::class, 'customer_id');
+    }
+
     public function getProfileImageFullPathAttribute()
     {
         $image = $this->profile_image;
