@@ -55,7 +55,8 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
     Route::group(['middleware' => ['auth:api']], function () {
         Route::get('info', [CustomerController::class, 'index']);
         Route::group(['prefix' => 'car', 'as' => 'car.'], function () {
-            Route::get('list', [CarController::class, 'index']);
+            Route::get('my-cars', [CarController::class, 'index']);
+            Route::get('user-cars', [CarController::class, 'index']);
             Route::post('create', [CarController::class, 'store']);
             Route::get('detail/{id}', [CarController::class, 'show']);
             Route::post('update/{id}', [CarController::class, 'update']);

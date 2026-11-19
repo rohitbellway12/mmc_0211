@@ -20,6 +20,7 @@ use Modules\PaymentModule\Library\Payer;
 use Modules\PaymentModule\Library\Receiver;
 use Modules\PaymentModule\Traits\Payment as PaymentTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
 
 class CustomerCarController extends Controller
 {
@@ -34,8 +35,14 @@ class CustomerCarController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        if ($request->get('type') === 'user' || $request->get('type') === 'user_cars' || $request->get('scope') === 'my_cars') {
+            return app(\Modules\CustomerModule\Http\Controllers\Api\V1\Customer\CarController::class)->index($request);
+        }
+
         $validator = Validator::make($request->all(), [
             'category_id' => 'nullable|uuid',
+            'zone_id' => 'nullable',
+            'zone_ids' => 'nullable|array',
             'service_category' => 'nullable|in:car_hire,chauffeur,all',
             'limit' => 'numeric|min:1|max:200',
             'offset' => 'numeric|min:0|max:100000',
@@ -54,7 +61,48 @@ class CustomerCarController extends Controller
         $limit = $request->get('limit', 10);
         $offset = $request->get('offset', 1);
 
-        $cars = $this->car->with(['type', 'category'])
+        $zoneId = $request->get('zone_id')
+            ?? Config::get('zone_id')
+            ?? $request->header('zoneid')
+            ?? $request->header('zone-id')
+            ?? $request->header('zone_id');
+
+        if (empty($zoneId) && auth('api')->check()) {
+            $userAddress = \Modules\UserManagement\Entities\UserAddress::where('user_id', auth('api')->id())
+                ->whereNotNull('zone_id')
+                ->latest()
+                ->first();
+            if ($userAddress) {
+                $zoneId = $userAddress->zone_id;
+            }
+        }
+
+        $zoneIds = [];
+        if ($request->has('zone_ids') && is_array($request->get('zone_ids'))) {
+            $zoneIds = $request->get('zone_ids');
+        } elseif (!empty($zoneId)) {
+            if (is_array($zoneId)) {
+                $zoneIds = $zoneId;
+            } elseif (str_contains($zoneId, ',')) {
+                $zoneIds = array_map('trim', explode(',', $zoneId));
+            } else {
+                $zoneIds = [$zoneId];
+            }
+        }
+
+        $cars = $this->car->with(['type', 'category', 'provider'])
+            ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                return $query->whereHas('provider', function ($q) use ($zoneIds) {
+                    $q->whereIn('zone_id', $zoneIds)
+                      ->where('is_active', 1)
+                      ->where('is_approved', 1);
+                });
+            }, function ($query) {
+                return $query->whereHas('provider', function ($q) {
+                    $q->where('is_active', 1)
+                      ->where('is_approved', 1);
+                });
+            })
             ->when($request->filled('category_id'), function ($query) use ($request) {
                 return $query->where('category_id', $request->category_id);
             })
@@ -541,6 +589,8 @@ class CustomerCarController extends Controller
             'limit' => 'numeric|min:1|max:200',
             'offset' => 'numeric|min:0',
             'chauffeur_tier' => 'nullable|string',
+            'zone_id' => 'nullable',
+            'zone_ids' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -550,9 +600,50 @@ class CustomerCarController extends Controller
         $limit = $request->get('limit', 10);
         $offset = $request->get('offset', 1);
 
+        $zoneId = $request->get('zone_id')
+            ?? Config::get('zone_id')
+            ?? $request->header('zoneid')
+            ?? $request->header('zone-id')
+            ?? $request->header('zone_id');
+
+        if (empty($zoneId) && auth('api')->check()) {
+            $userAddress = \Modules\UserManagement\Entities\UserAddress::where('user_id', auth('api')->id())
+                ->whereNotNull('zone_id')
+                ->latest()
+                ->first();
+            if ($userAddress) {
+                $zoneId = $userAddress->zone_id;
+            }
+        }
+
+        $zoneIds = [];
+        if ($request->has('zone_ids') && is_array($request->get('zone_ids'))) {
+            $zoneIds = $request->get('zone_ids');
+        } elseif (!empty($zoneId)) {
+            if (is_array($zoneId)) {
+                $zoneIds = $zoneId;
+            } elseif (str_contains($zoneId, ',')) {
+                $zoneIds = array_map('trim', explode(',', $zoneId));
+            } else {
+                $zoneIds = [$zoneId];
+            }
+        }
+
         $categoryId = 'fd6a04cf-3803-4a9b-a830-6cfa9c3c48d4';
 
         $cars = $this->car->with(['type', 'category', 'provider'])
+            ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                return $query->whereHas('provider', function ($q) use ($zoneIds) {
+                    $q->whereIn('zone_id', $zoneIds)
+                      ->where('is_active', 1)
+                      ->where('is_approved', 1);
+                });
+            }, function ($query) {
+                return $query->whereHas('provider', function ($q) {
+                    $q->where('is_active', 1)
+                      ->where('is_approved', 1);
+                });
+            })
             ->where(function ($q) use ($categoryId) {
                 $q->where('service_category', 'chauffeur')
                   ->orWhere('category_id', $categoryId);
