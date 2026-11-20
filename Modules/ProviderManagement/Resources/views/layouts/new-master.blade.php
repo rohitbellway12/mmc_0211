@@ -644,6 +644,7 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
         var audio = document.getElementById("audio-element");
 
         function playAudio(status) {
+            if (!audio) return;
             status ? audio.play() : audio.pause();
         }
 
@@ -681,7 +682,7 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
                                 Swal.fire({
                                     title: '{{translate('New_Notification')}}',
                                     text: "{{translate('You_have_new_booking_arrived')}}",
-                                    icon: 'info',
+                                    type: 'info',
                                     showCloseButton: true,
                                     showCancelButton: false,
                                     focusConfirm: false,
@@ -712,61 +713,100 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
              @endif
 
         @endif
+    @endif
 
-        @if($admin_order_notification_type == 'firebase')
-            @php($fcm_credentials = business_config('firebase_message_config', 'third_party')->live_values ?? [])
-            @if(!empty($fcm_credentials) && !empty($fcm_credentials['status']) && !empty($fcm_credentials['apiKey']))
+    @php($fcm_credentials = business_config('firebase_message_config', 'third_party')->live_values ?? [])
+    @if(empty($fcm_credentials) || empty($fcm_credentials['apiKey']))
+        @php($fcm_credentials = \Modules\BusinessSettingsModule\Entities\BusinessSettings::where('key_name', 'firebase_message_config')->first()?->live_values ?? [])
+    @endif
+
+    console.log("[FCM-DEBUG] Step 1: Script loaded. Credentials from DB:", @json($fcm_credentials));
+
+    @if(!empty($fcm_credentials) && !empty($fcm_credentials['apiKey']))
+        try {
+            console.log("FCM initializing on provider dashboard...");
+            var firebaseConfig = {
+                apiKey: "{{isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : ''}}",
+                authDomain: "{{isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : ''}}",
+                projectId: "{{isset($fcm_credentials['projectId']) ? $fcm_credentials['projectId'] : ''}}",
+                storageBucket: "{{isset($fcm_credentials['storageBucket']) ? $fcm_credentials['storageBucket'] : ''}}",
+                messagingSenderId: "{{isset($fcm_credentials['messagingSenderId']) ? $fcm_credentials['messagingSenderId'] : ''}}",
+                appId: "{{isset($fcm_credentials['appId']) ? $fcm_credentials['appId'] : ''}}",
+                measurementId: "{{isset($fcm_credentials['measurementId']) ? $fcm_credentials['measurementId'] : ''}}"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const messaging = firebase.messaging();
+
+            async function startFCM() {
                 try {
-                    var firebaseConfig = {
-                        apiKey: "{{isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : ''}}",
-                        authDomain: "{{isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : ''}}",
-                        projectId: "{{isset($fcm_credentials['projectId']) ? $fcm_credentials['projectId'] : ''}}",
-                        storageBucket: "{{isset($fcm_credentials['storageBucket']) ? $fcm_credentials['storageBucket'] : ''}}",
-                        messagingSenderId: "{{isset($fcm_credentials['messagingSenderId']) ? $fcm_credentials['messagingSenderId'] : ''}}",
-                        appId: "{{isset($fcm_credentials['appId']) ? $fcm_credentials['appId'] : ''}}",
-                        measurementId: "{{isset($fcm_credentials['measurementId']) ? $fcm_credentials['measurementId'] : ''}}"
-                    };
-                    firebase.initializeApp(firebaseConfig);
-                    const messaging = firebase.messaging();
-                    function startFCM() {
-                        messaging
-                            .requestPermission()
-                            .then(function() {
-                                if ('serviceWorker' in navigator) {
-                                    return navigator.serviceWorker.register('{{ url('firebase-messaging-sw.js') }}')
-                                        .then(function() {
-                                            return navigator.serviceWorker.ready;
-                                        })
-                                        .then(function(registration) {
-                                            try {
-                                                messaging.useServiceWorker(registration);
-                                            } catch (e) {}
-                                            return messaging.getToken({ serviceWorkerRegistration: registration });
-                                        });
-                                }
-                                return messaging.getToken();
-                            })
-                            .then(function(token) {
-                                console.log("FCM Web Token successfully obtained:", token);
-                                subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_{{ auth()->user()->provider->id }}_booking_message');
-                                subscribeTokenToBackend(token, 'provider-admin-{{auth()->user()->provider->zone_id}}');
-                                subscribeTokenToBackend(token, 'provider-admin-all');
-                                @if($serviceAtProviderPlace)
-                                    @if(in_array('customer', $serviceLocations))
-                                        subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_customer_booking_message');
-                                   @endif
-                                   @if(in_array('provider', $serviceLocations))
-                                        subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_provider_booking_message');
-                                   @endif
-                                @else
-                                   subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_booking_message');
-                                @endif
-                            }).catch(function(error) {
-                            console.error('Error getting permission or token:', error);
-                        });
+                    console.log("[FCM] Current Notification.permission:", Notification.permission);
+
+                    let permission = Notification.permission;
+                    if (permission === 'default') {
+                        console.log("[FCM] Requesting notification permission from user...");
+                        permission = await Notification.requestPermission();
+                        console.log("[FCM] Permission response:", permission);
                     }
-                    function subscribeTokenToBackend(token, topic) {
-                        fetch('{{url('provider/subscribeToTopic')}}', {
+
+                    if (permission !== 'granted') {
+                        console.warn("[FCM] Push notification permission is NOT granted. Status:", permission);
+                        console.warn("[FCM] Please click the lock/settings icon in the browser URL bar and set Notifications to ALLOW.");
+                        return;
+                    }
+
+                    console.log("[FCM] Permission GRANTED. Registering Service Worker...");
+
+                    let registration = null;
+                    if ('serviceWorker' in navigator) {
+                        try {
+                            registration = await navigator.serviceWorker.register('{{ url('firebase-messaging-sw.js') }}');
+                            await navigator.serviceWorker.ready;
+                            console.log("[FCM] Service Worker registered & ready at:", registration.scope);
+                            try {
+                                messaging.useServiceWorker(registration);
+                            } catch (e) {}
+                        } catch (swErr) {
+                            console.warn("[FCM] Primary SW registration failed, trying root /firebase-messaging-sw.js ...", swErr);
+                            try {
+                                registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                                await navigator.serviceWorker.ready;
+                                console.log("[FCM] Fallback root SW registered & ready at:", registration.scope);
+                                try {
+                                    messaging.useServiceWorker(registration);
+                                } catch (e) {}
+                            } catch (swErr2) {
+                                console.error("[FCM] Both Service Worker registrations failed:", swErr2);
+                            }
+                        }
+                    }
+
+                    console.log("[FCM] Requesting FCM Token from Firebase...");
+                    const token = registration
+                        ? await messaging.getToken({ serviceWorkerRegistration: registration })
+                        : await messaging.getToken();
+
+                    console.log("FCM Web Token successfully obtained:", token);
+
+                    subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_{{ auth()->user()->provider->id }}_booking_message');
+                    subscribeTokenToBackend(token, 'provider-admin-{{auth()->user()->provider->zone_id}}');
+                    subscribeTokenToBackend(token, 'provider-admin-all');
+                    @if($serviceAtProviderPlace)
+                        @if(in_array('customer', $serviceLocations))
+                            subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_customer_booking_message');
+                       @endif
+                       @if(in_array('provider', $serviceLocations))
+                            subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_provider_booking_message');
+                       @endif
+                    @else
+                       subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_booking_message');
+                    @endif
+                } catch (error) {
+                    console.error('[FCM] Error getting permission or token:', error);
+                }
+            }
+
+            function subscribeTokenToBackend(token, topic) {
+                fetch('{{ route('provider.subscribeToTopic') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -836,10 +876,10 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
                 } catch (fcmErr) {
                     console.warn('FCM initialization skipped or failed:', fcmErr);
                 }
+            @else
+                console.error("[FCM-DEBUG] FAILED: Firebase apiKey is MISSING in Database for firebase_message_config!", @json($fcm_credentials));
             @endif
-        @endif
-    @endif
-</script>
+        </script>
 
 {!! Toastr::message() !!}
 
