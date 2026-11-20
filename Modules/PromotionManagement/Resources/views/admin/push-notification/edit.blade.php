@@ -22,6 +22,7 @@
                                   enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
+                                <input type="hidden" name="user_tz_offset" class="user_tz_offset_input">
                                 <div class="row">
                                     <div class="col-lg-6 mb-4 mb-lg-0">
                                         <div class="form-floating form-floating__icon mb-30">
@@ -191,10 +192,12 @@
         });
 
         $(document).ready(function () {
+            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
             $('.js-select').select2();
         });
 
         $(document).ready(function () {
+            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
             $('.js-select').select2({
                 placeholder: "{{translate('select_items')}}",
             });

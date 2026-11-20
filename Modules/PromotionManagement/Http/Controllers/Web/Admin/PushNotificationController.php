@@ -3,6 +3,7 @@
 namespace Modules\PromotionManagement\Http\Controllers\Web\Admin;
 
 use Brian2694\Toastr\Facades\Toastr;
+use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
@@ -196,6 +197,8 @@ class PushNotificationController extends Controller
 
             Toastr::success(translate('Push notification sent successfully'));
         } else {
+            $userTzOffset = $request->input('user_tz_offset') !== null ? (int) $request->input('user_tz_offset') : null;
+
             // Scheduled Delivery: Multi-date or multi-time support
             if ($repeatType === 'once') {
                 $rawDates = $request->input('scheduled_at', []);
@@ -207,6 +210,7 @@ class PushNotificationController extends Controller
                 }
 
                 foreach ($dates as $slot) {
+                    $systemSlot = $this->convertToSystemTimezone($slot, $userTzOffset, 'datetime');
                     $this->pushNotification->create([
                         'title' => $validatedData['title'],
                         'description' => $validatedData['description'],
@@ -216,7 +220,7 @@ class PushNotificationController extends Controller
                         'is_active' => 1,
                         'send_type' => 'scheduled',
                         'repeat_type' => 'once',
-                        'scheduled_at' => $slot,
+                        'scheduled_at' => $systemSlot,
                         'scheduled_time' => null,
                         'is_sent' => 0,
                         'last_sent_at' => null,
@@ -235,6 +239,7 @@ class PushNotificationController extends Controller
                 }
 
                 foreach ($times as $timeSlot) {
+                    $systemTime = $this->convertToSystemTimezone($timeSlot, $userTzOffset, 'time');
                     $this->pushNotification->create([
                         'title' => $validatedData['title'],
                         'description' => $validatedData['description'],
@@ -245,7 +250,7 @@ class PushNotificationController extends Controller
                         'send_type' => 'scheduled',
                         'repeat_type' => 'daily',
                         'scheduled_at' => null,
-                        'scheduled_time' => $timeSlot,
+                        'scheduled_time' => $systemTime,
                         'is_sent' => 0,
                         'last_sent_at' => null,
                     ]);
@@ -371,14 +376,19 @@ class PushNotificationController extends Controller
 
         $sendType = $request->input('send_type', 'immediate');
         $repeatType = $request->input('repeat_type', 'once');
+        $userTzOffset = $request->input('user_tz_offset') !== null ? (int) $request->input('user_tz_offset') : null;
 
         $rawScheduledAt = $request->input('scheduled_at', []);
         $dates = is_array($rawScheduledAt) ? array_values(array_filter($rawScheduledAt)) : array_filter([$rawScheduledAt]);
-        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? ($dates[0] ?? null) : null;
+        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once' && !empty($dates))
+            ? $this->convertToSystemTimezone($dates[0], $userTzOffset, 'datetime')
+            : null;
 
         $rawScheduledTime = $request->input('scheduled_time', []);
         $times = is_array($rawScheduledTime) ? array_values(array_filter($rawScheduledTime)) : array_filter([$rawScheduledTime]);
-        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? ($times[0] ?? null) : null;
+        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily' && !empty($times))
+            ? $this->convertToSystemTimezone($times[0], $userTzOffset, 'time')
+            : null;
 
         $pushNotification->send_type = $sendType;
         $pushNotification->repeat_type = $repeatType;
@@ -400,6 +410,7 @@ class PushNotificationController extends Controller
         if ($sendType === 'scheduled') {
             if ($repeatType === 'once' && count($dates) > 1) {
                 for ($i = 1; $i < count($dates); $i++) {
+                    $systemSlot = $this->convertToSystemTimezone($dates[$i], $userTzOffset, 'datetime');
                     $this->pushNotification->create([
                         'title' => $pushNotification->title,
                         'description' => $pushNotification->description,
@@ -409,7 +420,7 @@ class PushNotificationController extends Controller
                         'is_active' => 1,
                         'send_type' => 'scheduled',
                         'repeat_type' => 'once',
-                        'scheduled_at' => $dates[$i],
+                        'scheduled_at' => $systemSlot,
                         'scheduled_time' => null,
                         'is_sent' => 0,
                         'last_sent_at' => null,
@@ -417,6 +428,7 @@ class PushNotificationController extends Controller
                 }
             } elseif ($repeatType === 'daily' && count($times) > 1) {
                 for ($i = 1; $i < count($times); $i++) {
+                    $systemTime = $this->convertToSystemTimezone($times[$i], $userTzOffset, 'time');
                     $this->pushNotification->create([
                         'title' => $pushNotification->title,
                         'description' => $pushNotification->description,
@@ -427,7 +439,7 @@ class PushNotificationController extends Controller
                         'send_type' => 'scheduled',
                         'repeat_type' => 'daily',
                         'scheduled_at' => null,
-                        'scheduled_time' => $times[$i],
+                        'scheduled_time' => $systemTime,
                         'is_sent' => 0,
                         'last_sent_at' => null,
                     ]);
@@ -589,6 +601,34 @@ class PushNotificationController extends Controller
             } catch (\Exception $e) {
                 // Ignore any single failed token and continue
             }
+        }
+    }
+
+    /**
+     * Convert client browser time to the server's default timezone so cron checks match perfectly.
+     */
+    private function convertToSystemTimezone(?string $timeString, ?int $userTzOffset, string $type = 'datetime'): ?string
+    {
+        if (empty($timeString) || $userTzOffset === null) {
+            return $timeString;
+        }
+
+        try {
+            $hours = intdiv(-$userTzOffset, 60);
+            $mins = abs($userTzOffset) % 60;
+            $userTzString = sprintf('%+03d:%02d', $hours, $mins);
+            $systemTz = date_default_timezone_get();
+
+            if ($type === 'time') {
+                $today = now()->toDateString();
+                $userTime = Carbon::parse("{$today} {$timeString}", $userTzString);
+                return $userTime->setTimezone($systemTz)->format('H:i:s');
+            } else {
+                $userTime = Carbon::parse($timeString, $userTzString);
+                return $userTime->setTimezone($systemTz)->format('Y-m-d H:i:s');
+            }
+        } catch (\Exception $e) {
+            return $timeString;
         }
     }
 }

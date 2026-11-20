@@ -41,6 +41,7 @@
                             </div>
                                 <form action="{{route('admin.push-notification.store')}}" method="POST" enctype="multipart/form-data" id="push_notification_create_form">
                                     @csrf
+                                    <input type="hidden" name="user_tz_offset" class="user_tz_offset_input">
                                     <div class="row g-sm-4 g-3">
                                         <div class="col-lg-8">
                                             <div class="bg-light rounded p-20">
@@ -499,6 +500,7 @@
                 <form action="#" method="POST" id="update-form-submit" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="user_tz_offset" class="user_tz_offset_input">
                     <div class="offcanvas-body bg-white">
                         <div class="edit-push-notification">
                             <div class="bg-light rounded p-20 mb-20">
@@ -666,6 +668,7 @@
         "use Strict";
 
         $(document).ready(function () {
+            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
             // Initialize Select2 with placeholders
             $('.js-select').select2({
                 placeholder: "{{ translate('select_items') }}",
@@ -819,6 +822,7 @@
         });
 
         $(document).ready(function () {
+            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
             $('form').on('reset', function () {
                 setTimeout(function () {
                     $('#zone_selector__select4').val(null).trigger('change');
