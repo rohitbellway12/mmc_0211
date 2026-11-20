@@ -1047,9 +1047,11 @@ class ProviderController extends Controller
         try {
             if ($this->messaging) {
                 $this->messaging->subscribeToTopic($topic, $token);
-                return response()->json(['message' => 'Successfully subscribed to topic'], 200);
             }
-            return response()->json(['message' => 'Unauthorized'], 401);
+            if (auth()->check()) {
+                auth()->user()->update(['fcm_token' => $token]);
+            }
+            return response()->json(['message' => 'Successfully subscribed to topic and saved token'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

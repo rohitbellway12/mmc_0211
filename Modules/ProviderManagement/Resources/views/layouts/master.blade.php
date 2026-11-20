@@ -597,12 +597,27 @@
                             messaging
                                 .requestPermission()
                                 .then(function() {
+                                    if ('serviceWorker' in navigator) {
+                                        return navigator.serviceWorker.register('{{ url('firebase-messaging-sw.js') }}')
+                                            .then(function() {
+                                                return navigator.serviceWorker.ready;
+                                            })
+                                            .then(function(registration) {
+                                                try {
+                                                    messaging.useServiceWorker(registration);
+                                                } catch (e) {}
+                                                return messaging.getToken({ serviceWorkerRegistration: registration });
+                                            });
+                                    }
                                     return messaging.getToken();
                                 })
                                 .then(function(token) {
+                                    console.log("FCM Web Token successfully obtained:", token);
                                     subscribeTokenToBackend(token,
                                         'demandium_provider_{{ auth()->user()->provider->zone_id }}_{{ auth()->user()->provider->id }}_booking_message'
                                     );
+                                    subscribeTokenToBackend(token, 'provider-admin-{{ auth()->user()->provider->zone_id }}');
+                                    subscribeTokenToBackend(token, 'provider-admin-all');
                                     @if ($serviceAtProviderPlace)
                                         @if (in_array('customer', $serviceLocations))
                                             subscribeTokenToBackend(token,
@@ -648,33 +663,52 @@
                             });
                         }
                         messaging.onMessage(function(payload) {
-                            console.log(payload.data);
+                            console.log("FCM Payload received:", payload);
                             playAudio();
-                            Swal.fire({
-                                title: '{{ translate('New_Notification') }}',
-                                text: "{{ translate('You_have_new_booking_arrived') }}",
-                                icon: 'info',
-                                showCloseButton: true,
-                                showCancelButton: false,
-                                focusConfirm: false,
-                                confirmButtonText: '{{ translate('Show_Bookings') }}',
-                            }).then((result) => {
-                                if (result.value) {
-                                    playAudio(false);
-                                    checkBooking(payload.data
-                                        .booking_id
-                                        ); // In firebase, we might not have the count easily, but passing something non-null helps. 
-                                    // Actually, payload.data might have something. But for now, just ensure it's not NaN.
-                                    location.href =
-                                        "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
-                                } else if (result.dismiss === 'close') {
-                                    playAudio(false);
-                                    checkBooking(payload.data.booking_id);
-                                    location.href =
-                                        "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
-                                }
-                            })
 
+                            let title = payload.notification?.title || payload.data?.title || '{{ translate('New_Notification') }}';
+                            let body = payload.notification?.body || payload.data?.body || payload.data?.description || "{{ translate('You_have_new_booking_arrived') }}";
+                            let notifType = payload.data?.type || payload.data?.notification_type || 'general';
+                            let bookingId = payload.data?.booking_id;
+                            let image = payload.data?.image || payload.notification?.image || null;
+
+                            if (window.Notification && Notification.permission === 'granted') {
+                                try {
+                                    new Notification(title, {
+                                        body: body,
+                                        icon: image || '{{ asset('public/assets/admin-module/img/placeholder.png') }}'
+                                    });
+                                } catch (e) {}
+                            }
+
+                            if (bookingId || notifType === 'booking') {
+                                Swal.fire({
+                                    title: title,
+                                    text: body,
+                                    type: 'info',
+                                    showCloseButton: true,
+                                    showCancelButton: false,
+                                    focusConfirm: false,
+                                    confirmButtonText: '{{ translate('Show_Bookings') }}',
+                                }).then((result) => {
+                                    playAudio(false);
+                                    if (result.value || result.dismiss === 'close') {
+                                        if (typeof checkBooking === 'function') checkBooking(payload.data?.booking_id);
+                                        location.href = "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
+                                    }
+                                });
+                            } else {
+                                let imgHtml = image ? `<div class="mb-3 text-center"><img src="${image}" class="img-fluid rounded" style="max-height: 180px;" alt=""></div>` : '';
+                                Swal.fire({
+                                    title: title,
+                                    html: `${imgHtml}<p class="mb-0 text-dark fz-14">${body}</p>`,
+                                    type: 'info',
+                                    showCloseButton: true,
+                                    confirmButtonText: '{{ translate('OK') }}',
+                                }).then(() => {
+                                    playAudio(false);
+                                });
+                            }
                         });
                         startFCM();
                     } catch (fcmErr) {

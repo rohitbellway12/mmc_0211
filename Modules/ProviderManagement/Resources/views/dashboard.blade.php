@@ -633,8 +633,10 @@
             options.yaxis.labels.offsetX = -20;
         }
 
-        var chart = new ApexCharts(document.querySelector("#apex_line-chart"), options);
-        chart.render();
+        if (document.querySelector("#apex_line-chart")) {
+            var chart = new ApexCharts(document.querySelector("#apex_line-chart"), options);
+            chart.render();
+        }
 
         function update_chart(year) {
             var chartElement = document.querySelector('#apex_line-chart');
@@ -759,10 +761,14 @@
             },
         };
 
-        var chart = new ApexCharts(document.querySelector("#apex-donut-chart"), options);
-        var chart2 = new ApexCharts(document.querySelector("#apex-donut-chart2"), options);
-        chart.render();
-        chart2.render();
+        if (document.querySelector("#apex-donut-chart")) {
+            var chart = new ApexCharts(document.querySelector("#apex-donut-chart"), options);
+            chart.render();
+        }
+        if (document.querySelector("#apex-donut-chart2")) {
+            var chart2 = new ApexCharts(document.querySelector("#apex-donut-chart2"), options);
+            chart2.render();
+        }
     </script>
     <script>
         $(document).ready(function() {

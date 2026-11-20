@@ -57,8 +57,10 @@ class SendScheduledPushNotifications extends Command
 
         $allNotifications = $oneTimeNotifications->merge($dailyNotifications);
 
+        \Log::info("[Scheduled Push] Check ran at {$now->toDateTimeString()} ({$now->timezoneName}). Found {$allNotifications->count()} due notification(s).");
+
         if ($allNotifications->isEmpty()) {
-            $this->info('No scheduled push notifications due right now.');
+            $this->info("No scheduled push notifications due right now at {$now->toDateTimeString()} ({$now->timezoneName}).");
             return Command::SUCCESS;
         }
 

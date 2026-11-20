@@ -7584,4 +7584,27 @@ _Message' => 'Customer notification for provider bid offer
   'Push notification sent successfully' => 'Push notification sent successfully',
   'Select the exact future date and time.' => 'Select the exact future date and time.',
   'Current Server Time' => 'Current Server Time',
+  'Where
+                                        to Get This Information' => 'Where
+                                        to Get This Information',
+  'Click to
+                                                                    upload' => 'Click to
+                                                                    upload',
+  'Please ensure that your firebase configuration is set up before using these
+                                                features.' => 'Please ensure that your firebase configuration is set up before using these
+                                                features.',
+  'For configuring otp in the firebase you must create a firebase project first.
+                            If you have not created any project for your application yet please create a
+                            project first.' => 'For configuring otp in the firebase you must create a firebase project first.
+                            If you have not created any project for your application yet please create a
+                            project first.',
+  'Firebase
+                                console' => 'Firebase
+                                console',
+  'Navigate to the build menu from the left sidebar and select
+                                authentication.' => 'Navigate to the build menu from the left sidebar and select
+                                authentication.',
+  'Got
+                                it' => 'Got
+                                it',
 );

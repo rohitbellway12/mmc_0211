@@ -42,7 +42,17 @@ Route::get('/', [LandingController::class, 'home'])->name('home');
 //Route::get('page/about-us', [LandingController::class, 'aboutUs'])->name('page.about-us');
 //Route::get('page/privacy-policy', [LandingController::class, 'privacyPolicy'])->name('page.privacy-policy');
 //Route::get('page/terms-and-conditions', [LandingController::class, 'termsAndConditions'])->name('page.terms-and-conditions');
-Route::get('page/contact-us', [LandingController::class, 'contactUs'])->name('page.contact-us');
+Route::get('firebase-messaging-sw.js', function () {
+    $path = base_path('firebase-messaging-sw.js');
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript',
+        'Service-Worker-Allowed' => '/',
+    ]);
+});
+
 //Route::get('page/cancellation-policy', [LandingController::class, 'cancellationPolicy'])->name('page.cancellation-policy');
 //Route::get('page/refund-policy', [LandingController::class, 'refundPolicy'])->name('page.refund-policy');
 
