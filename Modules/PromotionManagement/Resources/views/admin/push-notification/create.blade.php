@@ -142,12 +142,14 @@
                                                                 <div class="col-md-5" id="scheduled_at_wrapper">
                                                                     <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Date & Time')}} <span class="text-danger">*</span></label>
                                                                     <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at" id="scheduled_at" value="{{ old('scheduled_at') }}">
-                                                                    <div class="fz-11 text-muted mt-1">{{translate('Select the exact future date and time when this notification should be sent.')}}</div>
+                                                                    <div class="fz-11 text-muted mt-1">{{translate('Select the exact future date and time.')}}</div>
+                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
                                                                 </div>
                                                                 <div class="col-md-5 d-none" id="scheduled_time_wrapper">
                                                                     <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Daily Send Time')}} <span class="text-danger">*</span></label>
                                                                     <input type="time" class="form-control theme-input-style" name="scheduled_time" id="scheduled_time" value="{{ old('scheduled_time') }}">
                                                                     <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at this time.')}}</div>
+                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -368,6 +370,10 @@
                                                                             data-zone_ids='@json($item->zone_ids)'
                                                                             data-to_users='@json($item->to_users)'
                                                                             data-image="{{ $item->cover_image_full_path }}"
+                                                                            data-send_type="{{ $item->send_type ?? 'immediate' }}"
+                                                                            data-repeat_type="{{ $item->repeat_type ?? 'once' }}"
+                                                                            data-scheduled_at="{{ $item->scheduled_at ? $item->scheduled_at->format('Y-m-d\TH:i') : '' }}"
+                                                                            data-scheduled_time="{{ $item->scheduled_time ?? '' }}"
                                                                             data-action="{{ route('admin.push-notification.update', [$item->id]) }}"
                                                                             data-resend="{{ route('admin.push-notification.resend', [$item->id]) }}">
                                                                     <span class="material-icons">edit</span>
@@ -557,6 +563,51 @@
                                         </select>
                                     </div>
                                 </div>
+
+                                {{-- Edit Scheduling Options --}}
+                                <div class="mt-3 pt-3 border-top">
+                                    <div class="mb-2 text-dark d-flex align-items-center gap-1 fw-semibold fz-13">
+                                        <span class="material-icons fz-16 text-primary">schedule</span>
+                                        {{translate('Delivery Timing')}}
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 align-items-center mb-3 p-2 bg-white rounded border">
+                                        <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                            <input class="form-check-input edit-send-type-radio" type="radio" name="send_type" id="edit_send_type_immediate" value="immediate">
+                                            <label class="form-check-label cursor-pointer text-dark fz-12" for="edit_send_type_immediate">
+                                                <strong>{{translate('Send Immediately')}}</strong>
+                                            </label>
+                                        </div>
+                                        <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                            <input class="form-check-input edit-send-type-radio" type="radio" name="send_type" id="edit_send_type_scheduled" value="scheduled">
+                                            <label class="form-check-label cursor-pointer text-dark fz-12" for="edit_send_type_scheduled">
+                                                <strong>{{translate('Schedule for Later')}}</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {{-- Edit Scheduled Options Box --}}
+                                    <div id="edit_scheduled_delivery_options" class="p-3 bg-white rounded border d-none">
+                                        <div class="mb-3">
+                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Frequency / Repeat')}}</label>
+                                            <select class="form-select select-repeat-type theme-input-style" name="repeat_type" id="edit_repeat_type">
+                                                <option value="once">{{translate('One-Time (Specific Date & Time)')}}</option>
+                                                <option value="daily">{{translate('Daily Repeating (Every Day at Time)')}}</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2" id="edit_scheduled_at_wrapper">
+                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Date & Time')}} <span class="text-danger">*</span></label>
+                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at" id="edit_scheduled_at">
+                                            <div class="fz-11 text-muted mt-1">{{translate('Select future date and time.')}}</div>
+                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                        </div>
+                                        <div class="mb-2 d-none" id="edit_scheduled_time_wrapper">
+                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Daily Send Time')}} <span class="text-danger">*</span></label>
+                                            <input type="time" class="form-control theme-input-style" name="scheduled_time" id="edit_scheduled_time">
+                                            <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at this time.')}}</div>
+                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -691,6 +742,23 @@
             } else {
                 offcanvas.find('#edit_notification_image_preview').hide();
             }
+
+            const sendType = button.data('send_type') || 'immediate';
+            const repeatType = button.data('repeat_type') || 'once';
+            const scheduledAt = button.data('scheduled_at') || '';
+            const scheduledTime = button.data('scheduled_time') || '';
+
+            if (sendType === 'scheduled') {
+                $('#edit_send_type_scheduled').prop('checked', true);
+            } else {
+                $('#edit_send_type_immediate').prop('checked', true);
+            }
+
+            $('#edit_repeat_type').val(repeatType);
+            $('#edit_scheduled_at').val(scheduledAt);
+            $('#edit_scheduled_time').val(scheduledTime);
+
+            updateEditScheduledInputsState();
         });
 
         function updateLetterCount(textarea) {
@@ -790,13 +858,20 @@
         }
 
         // Toggle Scheduled Delivery Options
-        $('.send-type-radio').on('change', function () {
-            if ($('#send_type_scheduled').is(':checked')) {
+        function updateScheduledInputsState() {
+            let isScheduled = $('#send_type_scheduled').is(':checked');
+            if (isScheduled) {
                 $('#scheduled_delivery_options').removeClass('d-none');
+                $('#scheduled_delivery_options input, #scheduled_delivery_options select').prop('disabled', false);
                 toggleRepeatInputs();
             } else {
                 $('#scheduled_delivery_options').addClass('d-none');
+                $('#scheduled_delivery_options input, #scheduled_delivery_options select').prop('disabled', true);
             }
+        }
+
+        $('.send-type-radio').on('change', function () {
+            updateScheduledInputsState();
         });
 
         $('#repeat_type').on('change', function () {
@@ -807,10 +882,52 @@
             let repeat = $('#repeat_type').val();
             if (repeat === 'daily') {
                 $('#scheduled_at_wrapper').addClass('d-none');
+                $('#scheduled_at_wrapper input').prop('disabled', true);
                 $('#scheduled_time_wrapper').removeClass('d-none');
+                $('#scheduled_time_wrapper input').prop('disabled', false);
             } else {
                 $('#scheduled_at_wrapper').removeClass('d-none');
+                $('#scheduled_at_wrapper input').prop('disabled', false);
                 $('#scheduled_time_wrapper').addClass('d-none');
+                $('#scheduled_time_wrapper input').prop('disabled', true);
+            }
+        }
+
+        updateScheduledInputsState();
+
+        // Toggle Edit Scheduled Delivery Options
+        function updateEditScheduledInputsState() {
+            let isScheduled = $('#edit_send_type_scheduled').is(':checked');
+            if (isScheduled) {
+                $('#edit_scheduled_delivery_options').removeClass('d-none');
+                $('#edit_scheduled_delivery_options input, #edit_scheduled_delivery_options select').prop('disabled', false);
+                toggleEditRepeatInputs();
+            } else {
+                $('#edit_scheduled_delivery_options').addClass('d-none');
+                $('#edit_scheduled_delivery_options input, #edit_scheduled_delivery_options select').prop('disabled', true);
+            }
+        }
+
+        $(document).on('change', '.edit-send-type-radio', function () {
+            updateEditScheduledInputsState();
+        });
+
+        $(document).on('change', '#edit_repeat_type', function () {
+            toggleEditRepeatInputs();
+        });
+
+        function toggleEditRepeatInputs() {
+            let repeat = $('#edit_repeat_type').val();
+            if (repeat === 'daily') {
+                $('#edit_scheduled_at_wrapper').addClass('d-none');
+                $('#edit_scheduled_at_wrapper input').prop('disabled', true);
+                $('#edit_scheduled_time_wrapper').removeClass('d-none');
+                $('#edit_scheduled_time_wrapper input').prop('disabled', false);
+            } else {
+                $('#edit_scheduled_at_wrapper').removeClass('d-none');
+                $('#edit_scheduled_at_wrapper input').prop('disabled', false);
+                $('#edit_scheduled_time_wrapper').addClass('d-none');
+                $('#edit_scheduled_time_wrapper input').prop('disabled', true);
             }
         }
 

@@ -7579,4 +7579,9 @@ _Message' => 'Customer notification for provider bid offer
   'Notification will automatically fire every day at this time.' => 'Notification will automatically fire every day at this time.',
   'Delivery / Timing' => 'Delivery / Timing',
   'Immediate' => 'Immediate',
+  'Delivery Timing' => 'Delivery Timing',
+  'Select future date and time.' => 'Select future date and time.',
+  'Push notification sent successfully' => 'Push notification sent successfully',
+  'Select the exact future date and time.' => 'Select the exact future date and time.',
+  'Current Server Time' => 'Current Server Time',
 );

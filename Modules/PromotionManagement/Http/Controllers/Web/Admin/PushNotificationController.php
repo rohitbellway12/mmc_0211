@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Modules\PromotionManagement\Entities\PushNotification;
 use Modules\ZoneManagement\Entities\Zone;
 use Modules\UserManagement\Entities\User;
@@ -130,8 +131,15 @@ class PushNotificationController extends Controller
             'cover_image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000',
             'send_type' => 'required|in:immediate,scheduled',
             'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
-            'scheduled_at' => 'nullable|required_if:repeat_type,once|date',
-            'scheduled_time' => 'nullable|required_if:repeat_type,daily',
+            'scheduled_at' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'once'),
+                'date',
+            ],
+            'scheduled_time' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'daily'),
+            ],
         ]);
 
         $image_name = file_uploader('push-notification/', 'png', $request->file('cover_image'));
@@ -274,7 +282,18 @@ class PushNotificationController extends Controller
             'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
             'zone_ids' => 'required|array',
             'zone_ids.*' => 'uuid',
-            'cover_image' => 'image|mimes:jpeg,jpg,png,gif|max:10000'
+            'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
+            'send_type' => 'required|in:immediate,scheduled',
+            'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
+            'scheduled_at' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'once'),
+                'date',
+            ],
+            'scheduled_time' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'daily'),
+            ],
         ]);
 
         $pushNotification = $this->pushNotification->where(['id' => $id])->first();
@@ -282,6 +301,20 @@ class PushNotificationController extends Controller
         $pushNotification->description = $request['description'];
         $pushNotification->to_users = $request['to_users'];
         $pushNotification->zone_ids = $request['zone_ids'];
+
+        $sendType = $request->input('send_type', 'immediate');
+        $repeatType = $request->input('repeat_type', 'once');
+        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? $request->input('scheduled_at') : null;
+        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? $request->input('scheduled_time') : null;
+
+        $pushNotification->send_type = $sendType;
+        $pushNotification->repeat_type = $repeatType;
+        $pushNotification->scheduled_at = $scheduledAt;
+        $pushNotification->scheduled_time = $scheduledTime;
+
+        if ($sendType === 'scheduled') {
+            $pushNotification->is_sent = 0;
+        }
 
         if ($request->has('cover_image')) {
             $pushNotification->cover_image = file_uploader('push-notification/', 'png', $request->file('cover_image'), $pushNotification->cover_image);

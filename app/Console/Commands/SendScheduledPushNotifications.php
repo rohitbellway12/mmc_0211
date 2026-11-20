@@ -62,6 +62,7 @@ class SendScheduledPushNotifications extends Command
             return Command::SUCCESS;
         }
 
+        \Log::info("[Scheduled Push] Processing {$allNotifications->count()} scheduled push notification(s) at {$now->toDateTimeString()}");
         $this->info("Found {$allNotifications->count()} scheduled notifications to process.");
 
         foreach ($allNotifications as $notification) {
@@ -116,6 +117,7 @@ class SendScheduledPushNotifications extends Command
             'last_sent_at' => Carbon::now(),
         ]);
 
+        \Log::info("[Scheduled Push] Dispatched successfully: ID {$notification->id}, Title: {$notification->title}");
         $this->info("Notification ID {$notification->id} ({$notification->title}) sent successfully.");
     }
 
