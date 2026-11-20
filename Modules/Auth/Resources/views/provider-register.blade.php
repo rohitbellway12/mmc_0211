@@ -65,14 +65,27 @@
 
         .register-wrap.style__two {
             min-height: 100vh;
+            min-height: 100dvh;
             display: grid;
             grid-template-columns: 1fr minmax(auto, 780px);
             background: var(--bg-dark);
+            overflow-x: hidden;
+            width: 100%;
         }
 
         @media only screen and (max-width: 991px) {
             .register-wrap.style__two {
-                grid-template-columns: 1fr;
+                display: block !important;
+                width: 100% !important;
+            }
+            .register-left {
+                display: none !important;
+            }
+            .register-right-wrap {
+                border-left: none !important;
+                width: 100% !important;
+                min-height: 100vh;
+                min-height: 100dvh;
             }
         }
 
@@ -114,6 +127,7 @@
             display: flex;
             flex-direction: column;
             color: #ffffff !important;
+            width: 100%;
         }
 
         .register-right {
@@ -122,6 +136,19 @@
             margin: 0 auto;
             padding: 2.5rem 1.75rem !important;
             color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .register-right {
+                padding: 1.5rem 1rem !important;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            .register-right {
+                padding: 1rem 0.65rem !important;
+            }
         }
 
         /* Steps navigation styling */
@@ -129,13 +156,64 @@
             display: grid;
             grid-template-columns: 46px 1fr;
             gap: 1.5rem;
+            width: 100%;
         }
 
-        @media only screen and (max-width: 575px) {
+        #register-vertical-steps.wizard.vertical .actions {
+            grid-column: 1 / -1;
+        }
+
+        @media only screen and (max-width: 768px) {
             #register-vertical-steps.wizard.vertical {
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 1rem !important;
+                width: 100% !important;
+            }
+
+            #register-vertical-steps.wizard .steps {
+                padding-top: 0 !important;
+                margin-bottom: 0.5rem !important;
+                width: 100% !important;
+            }
+
+            #register-vertical-steps.wizard .steps ul {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-around !important;
+                align-items: center !important;
+                gap: 0.25rem !important;
+                padding: 0 0 0.5rem 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                position: relative;
+                border-bottom: 1px solid rgba(250, 210, 147, 0.15);
+            }
+
+            #register-vertical-steps.wizard .steps ul li {
+                flex: 1 !important;
+                text-align: center !important;
+            }
+
+            #register-vertical-steps.wizard .steps ul li:not(:first-child) {
+                padding-top: 0 !important;
+                padding-left: 0 !important;
+            }
+
+            #register-vertical-steps.wizard .steps ul li:not(:first-child)::after {
+                display: none !important;
+            }
+
+            #register-vertical-steps.wizard .steps ul li .number,
+            #register-vertical-steps.wizard .steps ul .number,
+            .wizard .steps ul .number {
+                width: 34px !important;
+                min-width: 34px !important;
+                max-width: 34px !important;
+                height: 34px !important;
+                min-height: 34px !important;
+                max-height: 34px !important;
+                font-size: 0.88rem !important;
             }
         }
 
@@ -177,16 +255,6 @@
         #register-vertical-steps.wizard .steps ul li:not(:first-child) {
             padding-top: 85px !important;
             padding-left: 0 !important;
-        }
-
-        @media only screen and (max-width: 575px) {
-            #register-vertical-steps.wizard .steps ul {
-                flex-direction: row;
-                justify-content: space-between;
-            }
-            #register-vertical-steps.wizard .steps ul li:not(:first-child) {
-                padding-top: 0 !important;
-            }
         }
 
         #register-vertical-steps.wizard .steps ul li .number,
@@ -246,11 +314,13 @@
             background: rgba(12, 12, 12, 0.96) !important;
             border-top: 1px solid var(--border-gold);
             backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             padding: 1.25rem 0.5rem;
             position: sticky;
             bottom: 0;
             z-index: 99;
             margin-top: 1.5rem;
+            width: 100%;
         }
 
         #register-vertical-steps.wizard .actions ul {
@@ -260,6 +330,7 @@
             margin: 0;
             padding: 0;
             list-style: none;
+            width: 100%;
         }
 
         #register-vertical-steps.wizard .actions ul a {
@@ -271,6 +342,31 @@
             font-size: 0.95rem;
             letter-spacing: 0.5px;
             transition: all 0.3s ease;
+        }
+
+        @media only screen and (max-width: 575px) {
+            #register-vertical-steps.wizard.vertical .actions {
+                padding: 0.75rem 0.5rem !important;
+                padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+            }
+
+            #register-vertical-steps.wizard .actions ul {
+                justify-content: space-between !important;
+                gap: 0.5rem !important;
+            }
+
+            #register-vertical-steps.wizard .actions ul li {
+                flex: 1 !important;
+            }
+
+            #register-vertical-steps.wizard .actions ul a {
+                padding: 0.75rem 0.5rem !important;
+                font-size: 0.88rem !important;
+                text-align: center !important;
+                display: block !important;
+                width: 100% !important;
+                border-radius: 10px !important;
+            }
         }
 
         #register-vertical-steps.wizard .actions ul a[href="#next"],
@@ -508,6 +604,7 @@
             position: relative;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
             height: 280px;
+            width: 100%;
         }
 
         #pac-input {
@@ -518,6 +615,58 @@
             margin-top: 10px;
             padding: 8px 14px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: calc(100% - 20px) !important;
+            width: 100% !important;
+        }
+
+        @media only screen and (max-width: 575px) {
+            #location_map_div {
+                height: 220px !important;
+            }
+            #pac-input {
+                font-size: 0.85rem !important;
+                padding: 6px 10px !important;
+            }
+            .role-option-card {
+                padding: 0.65rem 0.5rem !important;
+            }
+            .role-option-card .material-icons {
+                font-size: 22px !important;
+            }
+            .role-option-card .fw-bold {
+                font-size: 0.88rem !important;
+            }
+            .role-option-card .text-white-50 {
+                font-size: 0.68rem !important;
+                line-height: 1.2 !important;
+            }
+            .spartan_item_wrapper {
+                max-width: 100% !important;
+            }
+            #multi_image_picker2 > div {
+                width: 50% !important;
+                max-width: 50% !important;
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+            }
+            #reg-title {
+                font-size: 1.45rem !important;
+            }
+            #reg-subtitle {
+                font-size: 0.82rem !important;
+            }
+            .form-floating > label,
+            .form-floating__icon > label {
+                font-size: 0.88rem !important;
+            }
+            .form-control, .form-select {
+                font-size: 0.9rem !important;
+                height: 50px !important;
+                padding: 0.6rem 0.9rem !important;
+            }
+            .iti input {
+                height: 50px !important;
+            }
         }
 
         /* Business Plan & Subscription Packages */
@@ -696,8 +845,11 @@
             </div>
 
             <div class="register-right-wrap">
-                <div class="register-right mx-auto p-3">
-                    <div class="text-center mb-4 d-flex flex-column gap-1 mt-2">
+                <div class="register-right mx-auto p-2 p-sm-3">
+                    <div class="d-lg-none text-center mb-3 pt-2">
+                        <img src="{{ $logo }}" alt="{{ translate('MMC Logo') }}" style="max-width: 120px; filter: drop-shadow(0 0 12px rgba(250, 210, 147, 0.4));">
+                    </div>
+                    <div class="text-center mb-4 d-flex flex-column gap-1 mt-1">
                         <div class="d-inline-flex align-items-center justify-content-center mb-1">
                             <span class="badge" id="reg-badge" style="background: rgba(250, 210, 147, 0.15); color: #FAD293; border: 1px solid rgba(250, 210, 147, 0.3); border-radius: 20px; font-weight: 600; font-size: 0.75rem; letter-spacing: 1px; padding: 6px 14px; text-transform: uppercase;">
                                 {{ translate('Join MMC Network') }}
@@ -1059,6 +1211,13 @@
                             </div>
                         </section>
                     </form>
+
+                    <div class="text-center mt-3 pt-3 border-top" style="border-color: rgba(255, 255, 255, 0.1) !important;">
+                        <span class="text-white-50" style="font-size: 0.9rem;">
+                            {{ translate('Already have an account?') }}
+                        </span>
+                        <a href="{{ route('provider.auth.login') }}" class="text-gold fw-bold ms-1" style="text-decoration: none;">{{ translate('Sign In') }} &rarr;</a>
+                    </div>
                 </div>
             </div>
         </div>

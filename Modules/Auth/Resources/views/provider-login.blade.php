@@ -32,13 +32,17 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: var(--bg-dark);
-            height: 100vh;
+            min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
+            padding: 1.5rem 1rem;
+            box-sizing: border-box;
         }
 
         .login-bg {
@@ -60,11 +64,65 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(250, 210, 147, 0.2);
             border-radius: 24px;
-            padding: 3rem;
+            padding: 2.75rem 2.25rem;
             width: 100%;
             max-width: 450px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.8s ease-out;
+            margin: auto;
+            position: relative;
+        }
+
+        @media (max-width: 576px) {
+            body {
+                padding: 1rem 0.75rem;
+                align-items: center;
+            }
+
+            .glass-card {
+                padding: 1.75rem 1.25rem;
+                border-radius: 18px;
+                max-width: 100%;
+            }
+
+            .login-logo-container {
+                margin-bottom: 1.25rem !important;
+            }
+
+            .login-logo {
+                max-width: 110px !important;
+            }
+
+            .form-title {
+                font-size: 1.45rem !important;
+            }
+
+            .form-subtitle {
+                margin-bottom: 1.25rem !important;
+                font-size: 0.85rem !important;
+            }
+
+            .input-premium {
+                padding: 0.9rem 1rem 0.9rem 3rem !important;
+                font-size: 0.95rem !important;
+            }
+
+            .btn-premium {
+                padding: 0.85rem !important;
+                margin-top: 1.25rem !important;
+                font-size: 0.95rem !important;
+            }
+
+            .form-group-premium {
+                margin-bottom: 1rem !important;
+            }
+
+            .software-version {
+                position: static !important;
+                text-align: center;
+                margin-top: 1rem;
+                padding-bottom: 0.5rem;
+            }
         }
 
         @keyframes fadeIn {
@@ -214,78 +272,80 @@
 <body>
     <div class="login-bg"></div>
 
-    <div class="glass-card">
-        @php($logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'business_information', path: 'business/', defaultPath: 'public/assets/admin-module/img/placeholder.png'))
+    <div class="w-100 d-flex flex-column align-items-center justify-content-center my-auto">
+        <div class="glass-card">
+            @php($logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'business_information', path: 'business/', defaultPath: 'public/assets/admin-module/img/placeholder.png'))
 
-        <div class="login-logo-container">
-            <img src="{{ $logo }}" class="login-logo" alt="MMC">
+            <div class="login-logo-container">
+                <img src="{{ $logo }}" class="login-logo" alt="MMC">
+            </div>
+
+            <h1 class="form-title" id="login-title">{{ translate('Provider Sign In') }}</h1>
+            <p class="form-subtitle">{{ translate('Premium Automotive Terminal') }}</p>
+
+            <!-- Role Selector Toggle -->
+            <div class="d-flex mb-4 p-1" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(250, 210, 147, 0.25); border-radius: 14px;">
+                <button type="button" class="btn flex-grow-1 role-toggle-btn active-role-btn" id="btn-login-provider" data-role="provider" style="border-radius: 10px; font-weight: 700; font-size: 0.9rem; padding: 10px 14px; background: var(--gold-gradient); color: #000; border: none; transition: all 0.3s ease;">
+                    <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">business</span>
+                    {{ translate('Provider') }}
+                </button>
+                <button type="button" class="btn flex-grow-1 role-toggle-btn" id="btn-login-partner" data-role="partner" style="border-radius: 10px; font-weight: 600; font-size: 0.9rem; padding: 10px 14px; background: transparent; color: rgba(255, 255, 255, 0.65); border: none; transition: all 0.3s ease;">
+                    <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">handshake</span>
+                    {{ translate('Partner') }}
+                </button>
+            </div>
+
+            <form action="{{ route('provider.auth.login') }}" method="POST" id="login-form">
+                @csrf
+                <input type="hidden" name="login_type" id="login_type" value="provider">
+
+                <div class="form-group-premium">
+                    <span class="material-icons input-icon">email</span>
+                    <input type="email" name="email_or_phone" class="form-control input-premium"
+                        value="{{ request()->cookie('provider_remember_email') }}"
+                        placeholder="{{ translate('Email or Phone') }}" required id="email">
+                </div>
+
+                <div class="form-group-premium">
+                    <span class="material-icons input-icon">lock</span>
+                    <input type="password" name="password" class="form-control input-premium"
+                        value="{{ request()->cookie('provider_remember_password') }}"
+                        placeholder="{{ translate('Password') }}" required id="password">
+                    <span class="material-icons togglePassword" id="togglePassword">visibility_off</span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center px-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="remember" value="1"
+                            {{ request()->cookie('provider_remember_checked') ? 'checked' : '' }} id="rememberMeCheckbox">
+                        <label class="form-check-label"
+                            for="rememberMeCheckbox">{{ translate('Keep me signed in') }}</label>
+                    </div>
+                    <a href="{{ route('provider.auth.reset-password.index') }}" class="form-check-label"
+                        style="color: var(--primary)">{{ translate('Forgot Password?') }}</a>
+                </div>
+
+                @php($recaptcha = business_config('recaptcha', 'third_party'))
+                @if (isset($recaptcha) && $recaptcha->is_active)
+                    <div class="recaptcha d-flex justify-content-center mt-4">
+                        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                    </div>
+                @endif
+
+                <button type="submit" class="btn btn-premium" id="signInBtn">{{ translate('Login to Terminal') }}</button>
+
+                <div class="form-footer mt-3">
+                    <span style="color: rgba(255, 255, 255, 0.65);">{{ translate('New Partner?') }}</span>
+                    <a href="{{ route('provider.auth.sign-up') }}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
+                        {{ translate('Sign Up / Register Here') }} &rarr;
+                    </a>
+                </div>
+            </form>
         </div>
 
-        <h1 class="form-title" id="login-title">{{ translate('Provider Sign In') }}</h1>
-        <p class="form-subtitle">{{ translate('Premium Automotive Terminal') }}</p>
-
-        <!-- Role Selector Toggle -->
-        <div class="d-flex mb-4 p-1" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(250, 210, 147, 0.25); border-radius: 14px;">
-            <button type="button" class="btn flex-grow-1 role-toggle-btn active-role-btn" id="btn-login-provider" data-role="provider" style="border-radius: 10px; font-weight: 700; font-size: 0.9rem; padding: 10px 14px; background: var(--gold-gradient); color: #000; border: none; transition: all 0.3s ease;">
-                <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">business</span>
-                {{ translate('Provider') }}
-            </button>
-            <button type="button" class="btn flex-grow-1 role-toggle-btn" id="btn-login-partner" data-role="partner" style="border-radius: 10px; font-weight: 600; font-size: 0.9rem; padding: 10px 14px; background: transparent; color: rgba(255, 255, 255, 0.65); border: none; transition: all 0.3s ease;">
-                <span class="material-icons align-middle" style="font-size: 18px; margin-right: 4px;">handshake</span>
-                {{ translate('Partner') }}
-            </button>
+        <div class="software-version">
+            {{ translate('Version') }} {{ env('SOFTWARE_VERSION') }}
         </div>
-
-        <form action="{{ route('provider.auth.login') }}" method="POST" id="login-form">
-            @csrf
-            <input type="hidden" name="login_type" id="login_type" value="provider">
-
-            <div class="form-group-premium">
-                <span class="material-icons input-icon">email</span>
-                <input type="email" name="email_or_phone" class="form-control input-premium"
-                    value="{{ request()->cookie('provider_remember_email') }}"
-                    placeholder="{{ translate('Email or Phone') }}" required id="email">
-            </div>
-
-            <div class="form-group-premium">
-                <span class="material-icons input-icon">lock</span>
-                <input type="password" name="password" class="form-control input-premium"
-                    value="{{ request()->cookie('provider_remember_password') }}"
-                    placeholder="{{ translate('Password') }}" required id="password">
-                <span class="material-icons togglePassword" id="togglePassword">visibility_off</span>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center px-1">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" value="1"
-                        {{ request()->cookie('provider_remember_checked') ? 'checked' : '' }} id="rememberMeCheckbox">
-                    <label class="form-check-label"
-                        for="rememberMeCheckbox">{{ translate('Keep me signed in') }}</label>
-                </div>
-                <a href="{{ route('provider.auth.reset-password.index') }}" class="form-check-label"
-                    style="color: var(--primary)">{{ translate('Forgot Password?') }}</a>
-            </div>
-
-            @php($recaptcha = business_config('recaptcha', 'third_party'))
-            @if (isset($recaptcha) && $recaptcha->is_active)
-                <div class="recaptcha d-flex justify-content-center mt-4">
-                    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
-                </div>
-            @endif
-
-            <button type="submit" class="btn btn-premium" id="signInBtn">{{ translate('Login to Terminal') }}</button>
-
-            <div class="form-footer mt-3">
-                <span style="color: rgba(255, 255, 255, 0.65);">{{ translate('New Partner?') }}</span>
-                <a href="{{ route('provider.auth.sign-up') }}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
-                    {{ translate('Sign Up / Register Here') }} &rarr;
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <div class="software-version">
-        {{ translate('Version') }} {{ env('SOFTWARE_VERSION') }}
     </div>
 
     <script src="{{ asset('public/assets/provider-module') }}/js/jquery-3.6.0.min.js"></script>
