@@ -99,8 +99,14 @@ class SendScheduledPushNotifications extends Command
             $filteredUsers = array_keys(array_filter($permissionsMap));
         }
 
+        $hasAllZones = in_array('all', $zoneIds, true);
+
         // Send Topic Notifications
         foreach ($filteredUsers as $user_type) {
+            try {
+                topic_notification("{$user_type}-all", $title, $description, $coverImage, null, 'general');
+            } catch (\Exception $e) {}
+
             foreach ($zoneIds as $zone_id) {
                 try {
                     topic_notification("{$user_type}-{$zone_id}", $title, $description, $coverImage, null, 'general');
@@ -111,7 +117,7 @@ class SendScheduledPushNotifications extends Command
         }
 
         // Send Direct Device Notifications via FCM Tokens
-        $this->sendDeviceNotifications($filteredUsers, $zoneIds, $title, $description, $coverImage);
+        $this->sendDeviceNotifications($filteredUsers, $zoneIds, $title, $description, $coverImage, $hasAllZones);
 
         // Update notification state
         $notification->update([
@@ -126,7 +132,7 @@ class SendScheduledPushNotifications extends Command
     /**
      * Send direct device notifications to targeted users with active FCM tokens.
      */
-    protected function sendDeviceNotifications(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage): void
+    protected function sendDeviceNotifications(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage, bool $hasAllZones = false): void
     {
         $tokens = [];
         $imageUrl = null;
@@ -146,7 +152,7 @@ class SendScheduledPushNotifications extends Command
                 ->where('is_active', 1)
                 ->whereNotNull('fcm_token')
                 ->where('fcm_token', '!=', '')
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->where(function ($sub) use ($zoneIds) {
                         $sub->whereHas('addresses', function ($aq) use ($zoneIds) {
                             $aq->whereIn('zone_id', $zoneIds);
@@ -162,7 +168,7 @@ class SendScheduledPushNotifications extends Command
         // 2. Providers
         if (in_array('provider-admin', $filteredUsers, true)) {
             $providerUserIds = Provider::where('is_active', 1)
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
                 })
                 ->pluck('user_id')
@@ -181,7 +187,7 @@ class SendScheduledPushNotifications extends Command
         // 3. Servicemen
         if (in_array('provider-serviceman', $filteredUsers, true)) {
             $providerIds = Provider::where('is_active', 1)
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
                 })
                 ->pluck('id')

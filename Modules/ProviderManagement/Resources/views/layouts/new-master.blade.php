@@ -720,11 +720,8 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
         @php($fcm_credentials = \Modules\BusinessSettingsModule\Entities\BusinessSettings::where('key_name', 'firebase_message_config')->first()?->live_values ?? [])
     @endif
 
-    console.log("[FCM-DEBUG] Step 1: Script loaded. Credentials from DB:", @json($fcm_credentials));
-
     @if(!empty($fcm_credentials) && !empty($fcm_credentials['apiKey']))
         try {
-            console.log("FCM initializing on provider dashboard...");
             var firebaseConfig = {
                 apiKey: "{{isset($fcm_credentials['apiKey']) ? $fcm_credentials['apiKey'] : ''}}",
                 authDomain: "{{isset($fcm_credentials['authDomain']) ? $fcm_credentials['authDomain'] : ''}}",
@@ -737,55 +734,52 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
             firebase.initializeApp(firebaseConfig);
             const messaging = firebase.messaging();
 
+            let appBase = '';
+            if (window.location.pathname.indexOf('/mmc') === 0) {
+                appBase = '/mmc';
+            } else if (window.location.pathname.indexOf('/backend') === 0) {
+                appBase = '/backend';
+            }
+            let swPath = appBase ? (appBase + '/firebase-messaging-sw.js') : '{{ url('firebase-messaging-sw.js') }}';
+            let subscribeUrl = appBase ? (appBase + '/provider/subscribeToTopic') : '{{ route('provider.subscribeToTopic') }}';
+
             async function startFCM() {
                 try {
-                    console.log("[FCM] Current Notification.permission:", Notification.permission);
-
                     let permission = Notification.permission;
                     if (permission === 'default') {
-                        console.log("[FCM] Requesting notification permission from user...");
                         permission = await Notification.requestPermission();
-                        console.log("[FCM] Permission response:", permission);
                     }
 
                     if (permission !== 'granted') {
-                        console.warn("[FCM] Push notification permission is NOT granted. Status:", permission);
-                        console.warn("[FCM] Please click the lock/settings icon in the browser URL bar and set Notifications to ALLOW.");
                         return;
                     }
-
-                    console.log("[FCM] Permission GRANTED. Registering Service Worker...");
 
                     let registration = null;
                     if ('serviceWorker' in navigator) {
                         try {
-                            registration = await navigator.serviceWorker.register('{{ url('firebase-messaging-sw.js') }}');
+                            registration = await navigator.serviceWorker.register(swPath);
                             await navigator.serviceWorker.ready;
-                            console.log("[FCM] Service Worker registered & ready at:", registration.scope);
                             try {
                                 messaging.useServiceWorker(registration);
                             } catch (e) {}
                         } catch (swErr) {
-                            console.warn("[FCM] Primary SW registration failed, trying root /firebase-messaging-sw.js ...", swErr);
                             try {
                                 registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                                 await navigator.serviceWorker.ready;
-                                console.log("[FCM] Fallback root SW registered & ready at:", registration.scope);
                                 try {
                                     messaging.useServiceWorker(registration);
                                 } catch (e) {}
                             } catch (swErr2) {
-                                console.error("[FCM] Both Service Worker registrations failed:", swErr2);
+                                console.error("[FCM] Service Worker registration failed:", swErr2);
                             }
                         }
                     }
 
-                    console.log("[FCM] Requesting FCM Token from Firebase...");
                     const token = registration
                         ? await messaging.getToken({ serviceWorkerRegistration: registration })
                         : await messaging.getToken();
 
-                    console.log("FCM Web Token successfully obtained:", token);
+                    if (!token) return;
 
                     subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_{{ auth()->user()->provider->id }}_booking_message');
                     subscribeTokenToBackend(token, 'provider-admin-{{auth()->user()->provider->zone_id}}');
@@ -806,24 +800,17 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
             }
 
             function subscribeTokenToBackend(token, topic) {
-                fetch('{{ route('provider.subscribeToTopic') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({ token: token, topic: topic })
-                        }).then(response => {
-                            if (response.status < 200 || response.status >= 400) {
-                                return response.text().then(text => {
-                                    throw new Error(`Error subscribing to topic: ${response.status} - ${text}`);
-                                });
-                            }
-                            console.log(`Subscribed to "${topic}"`);
-                        }).catch(error => {
-                            console.error('Subscription error:', error);
-                        });
-                    }
+                fetch(subscribeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ token: token, topic: topic })
+                }).catch(error => {
+                    console.error('Subscription error:', error);
+                });
+            }
                     messaging.onMessage(function(payload) {
                         console.log("FCM Payload received:", payload);
                         playAudio();

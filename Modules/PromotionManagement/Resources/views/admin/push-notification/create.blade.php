@@ -39,7 +39,7 @@
                                 <h3 class="mb-1">{{ translate('Push Notification') }}</h3>
                                 <p class="fz-12 mb-20">{{ translate('From here admin can send notification to the users') }}</p>
                             </div>
-                                <form action="{{route('admin.push-notification.store')}}" method="POST" enctype="multipart/form-data">
+                                <form action="{{route('admin.push-notification.store')}}" method="POST" enctype="multipart/form-data" id="push_notification_create_form">
                                     @csrf
                                     <div class="row g-sm-4 g-3">
                                         <div class="col-lg-8">
@@ -139,16 +139,34 @@
                                                                         <option value="daily" {{ old('repeat_type') == 'daily' ? 'selected' : '' }}>{{translate('Daily Repeating (Every Day at Time)')}}</option>
                                                                     </select>
                                                                 </div>
-                                                                <div class="col-md-5" id="scheduled_at_wrapper">
-                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Date & Time')}} <span class="text-danger">*</span></label>
-                                                                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at" id="scheduled_at" value="{{ old('scheduled_at') }}">
-                                                                    <div class="fz-11 text-muted mt-1">{{translate('Select the exact future date and time.')}}</div>
+                                                                <div class="col-md-8" id="scheduled_at_wrapper">
+                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                        <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Date & Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                                        <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_datetime_btn">
+                                                                            <span class="material-icons fz-14">add</span> {{translate('Add More Date')}}
+                                                                        </button>
+                                                                    </div>
+                                                                    <div id="scheduled_datetime_container" class="d-flex flex-column gap-2">
+                                                                        <div class="d-flex align-items-center gap-2 datetime-slot-row">
+                                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="fz-11 text-muted mt-1">{{translate('You can add multiple dates and times. Click "+ Add More Date" to schedule more.')}}</div>
                                                                     <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
                                                                 </div>
-                                                                <div class="col-md-5 d-none" id="scheduled_time_wrapper">
-                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Daily Send Time')}} <span class="text-danger">*</span></label>
-                                                                    <input type="time" class="form-control theme-input-style" name="scheduled_time" id="scheduled_time" value="{{ old('scheduled_time') }}">
-                                                                    <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at this time.')}}</div>
+                                                                <div class="col-md-8 d-none" id="scheduled_time_wrapper">
+                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                        <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Daily Send Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                                        <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_time_btn">
+                                                                            <span class="material-icons fz-14">add</span> {{translate('Add More Time')}}
+                                                                        </button>
+                                                                    </div>
+                                                                    <div id="scheduled_time_container" class="d-flex flex-column gap-2">
+                                                                        <div class="d-flex align-items-center gap-2 time-slot-row">
+                                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
                                                                     <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
                                                                 </div>
                                                             </div>
@@ -595,15 +613,33 @@
                                             </select>
                                         </div>
                                         <div class="mb-2" id="edit_scheduled_at_wrapper">
-                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Date & Time')}} <span class="text-danger">*</span></label>
-                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at" id="edit_scheduled_at">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label class="form-label text-dark fz-12 fw-semibold mb-0">{{translate('Date & Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="edit_add_more_datetime_btn">
+                                                    <span class="material-icons fz-14">add</span> {{translate('Add More Date')}}
+                                                </button>
+                                            </div>
+                                            <div id="edit_scheduled_datetime_container" class="d-flex flex-column gap-2">
+                                                <div class="d-flex align-items-center gap-2 edit-datetime-slot-row">
+                                                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" id="edit_scheduled_at">
+                                                </div>
+                                            </div>
                                             <div class="fz-11 text-muted mt-1">{{translate('Select future date and time.')}}</div>
                                             <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
                                         </div>
                                         <div class="mb-2 d-none" id="edit_scheduled_time_wrapper">
-                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Daily Send Time')}} <span class="text-danger">*</span></label>
-                                            <input type="time" class="form-control theme-input-style" name="scheduled_time" id="edit_scheduled_time">
-                                            <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at this time.')}}</div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label class="form-label text-dark fz-12 fw-semibold mb-0">{{translate('Daily Send Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="edit_add_more_time_btn">
+                                                    <span class="material-icons fz-14">add</span> {{translate('Add More Time')}}
+                                                </button>
+                                            </div>
+                                            <div id="edit_scheduled_time_container" class="d-flex flex-column gap-2">
+                                                <div class="d-flex align-items-center gap-2 edit-time-slot-row">
+                                                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]" id="edit_scheduled_time">
+                                                </div>
+                                            </div>
+                                            <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
                                             <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
                                         </div>
                                     </div>
@@ -754,6 +790,9 @@
                 $('#edit_send_type_immediate').prop('checked', true);
             }
 
+            $('#edit_scheduled_datetime_container .edit-datetime-slot-row:not(:first)').remove();
+            $('#edit_scheduled_time_container .edit-time-slot-row:not(:first)').remove();
+
             $('#edit_repeat_type').val(repeatType);
             $('#edit_scheduled_at').val(scheduledAt);
             $('#edit_scheduled_time').val(scheduledTime);
@@ -895,6 +934,40 @@
 
         updateScheduledInputsState();
 
+        // Dynamic Add More Datetime Slot (Create)
+        $('#add_more_datetime_btn').on('click', function () {
+            let rowHtml = `
+                <div class="d-flex align-items-center gap-2 datetime-slot-row">
+                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                    <button type="button" class="btn btn-sm btn--danger p-1 remove-datetime-row" title="{{translate('Remove')}}">
+                        <span class="material-icons fz-18">delete</span>
+                    </button>
+                </div>
+            `;
+            $('#scheduled_datetime_container').append(rowHtml);
+        });
+
+        $(document).on('click', '.remove-datetime-row', function () {
+            $(this).closest('.datetime-slot-row').remove();
+        });
+
+        // Dynamic Add More Daily Time Slot (Create)
+        $('#add_more_time_btn').on('click', function () {
+            let rowHtml = `
+                <div class="d-flex align-items-center gap-2 time-slot-row">
+                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                    <button type="button" class="btn btn-sm btn--danger p-1 remove-time-row" title="{{translate('Remove')}}">
+                        <span class="material-icons fz-18">delete</span>
+                    </button>
+                </div>
+            `;
+            $('#scheduled_time_container').append(rowHtml);
+        });
+
+        $(document).on('click', '.remove-time-row', function () {
+            $(this).closest('.time-slot-row').remove();
+        });
+
         // Toggle Edit Scheduled Delivery Options
         function updateEditScheduledInputsState() {
             let isScheduled = $('#edit_send_type_scheduled').is(':checked');
@@ -916,6 +989,40 @@
             toggleEditRepeatInputs();
         });
 
+        // Dynamic Add More Datetime Slot (Edit)
+        $('#edit_add_more_datetime_btn').on('click', function () {
+            let rowHtml = `
+                <div class="d-flex align-items-center gap-2 edit-datetime-slot-row">
+                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                    <button type="button" class="btn btn-sm btn--danger p-1 remove-edit-datetime-row" title="{{translate('Remove')}}">
+                        <span class="material-icons fz-18">delete</span>
+                    </button>
+                </div>
+            `;
+            $('#edit_scheduled_datetime_container').append(rowHtml);
+        });
+
+        $(document).on('click', '.remove-edit-datetime-row', function () {
+            $(this).closest('.edit-datetime-slot-row').remove();
+        });
+
+        // Dynamic Add More Daily Time Slot (Edit)
+        $('#edit_add_more_time_btn').on('click', function () {
+            let rowHtml = `
+                <div class="d-flex align-items-center gap-2 edit-time-slot-row">
+                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                    <button type="button" class="btn btn-sm btn--danger p-1 remove-edit-time-row" title="{{translate('Remove')}}">
+                        <span class="material-icons fz-18">delete</span>
+                    </button>
+                </div>
+            `;
+            $('#edit_scheduled_time_container').append(rowHtml);
+        });
+
+        $(document).on('click', '.remove-edit-time-row', function () {
+            $(this).closest('.edit-time-slot-row').remove();
+        });
+
         function toggleEditRepeatInputs() {
             let repeat = $('#edit_repeat_type').val();
             if (repeat === 'daily') {
@@ -930,6 +1037,70 @@
                 $('#edit_scheduled_time_wrapper input').prop('disabled', true);
             }
         }
+
+        // Validate Create Form Submission
+        $('#push_notification_create_form').on('submit', function (e) {
+            if ($('#send_type_scheduled').is(':checked')) {
+                let repeatType = $('#repeat_type').val();
+                if (repeatType === 'once') {
+                    let hasValue = false;
+                    $('#scheduled_datetime_container input').each(function () {
+                        if ($(this).val() && $(this).val().trim() !== '') {
+                            hasValue = true;
+                        }
+                    });
+                    if (!hasValue) {
+                        e.preventDefault();
+                        toastr.error('{{ translate('Please select at least one date and time slot') }}');
+                        return false;
+                    }
+                } else if (repeatType === 'daily') {
+                    let hasValue = false;
+                    $('#scheduled_time_container input').each(function () {
+                        if ($(this).val() && $(this).val().trim() !== '') {
+                            hasValue = true;
+                        }
+                    });
+                    if (!hasValue) {
+                        e.preventDefault();
+                        toastr.error('{{ translate('Please select at least one daily send time') }}');
+                        return false;
+                    }
+                }
+            }
+        });
+
+        // Validate Edit Drawer Form Submission
+        $('#edit__NotifiCation form').on('submit', function (e) {
+            if ($('#edit_send_type_scheduled').is(':checked')) {
+                let repeatType = $('#edit_repeat_type').val();
+                if (repeatType === 'once') {
+                    let hasValue = false;
+                    $('#edit_scheduled_datetime_container input').each(function () {
+                        if ($(this).val() && $(this).val().trim() !== '') {
+                            hasValue = true;
+                        }
+                    });
+                    if (!hasValue) {
+                        e.preventDefault();
+                        toastr.error('{{ translate('Please select at least one date and time slot') }}');
+                        return false;
+                    }
+                } else if (repeatType === 'daily') {
+                    let hasValue = false;
+                    $('#edit_scheduled_time_container input').each(function () {
+                        if ($(this).val() && $(this).val().trim() !== '') {
+                            hasValue = true;
+                        }
+                    });
+                    if (!hasValue) {
+                        e.preventDefault();
+                        toastr.error('{{ translate('Please select at least one daily send time') }}');
+                        return false;
+                    }
+                }
+            }
+        });
 
 
     </script>

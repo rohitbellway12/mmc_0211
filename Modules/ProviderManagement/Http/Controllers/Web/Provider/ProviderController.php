@@ -1045,15 +1045,15 @@ class ProviderController extends Controller
         $token = $request->input('token');
         $topic = $request->input('topic');
         try {
-            if ($this->messaging) {
-                $this->messaging->subscribeToTopic($topic, $token);
-            }
             if (auth()->check()) {
                 auth()->user()->update(['fcm_token' => $token]);
             }
+            if ($this->messaging) {
+                $this->messaging->subscribeToTopic($topic, $token);
+            }
             return response()->json(['message' => 'Successfully subscribed to topic and saved token'], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Token saved, topic subscription status: ' . $e->getMessage()], 200);
         }
     }
 

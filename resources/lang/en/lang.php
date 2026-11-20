@@ -207,8 +207,8 @@
   'search' => 'Search',
   'click_this_icon_to_start_pin_points_in_the_map_and_connect_them_
                                                         to_draw_a_
-                                                        zone_._Minimum_3_points_required' => 'Click this icon to start pin points in the map and connect them
-                                                        to draw a
+                                                        zone_._Minimum_3_points_required' => 'Click this icon to start pin points in the map and connect them 
+                                                        to draw a 
                                                         zone . Minimum 3 points required',
   'use_this_to_drag_map_to_find_proper_area' => 'Use this to drag map to find proper area',
   'create_zone_by_click_on_map_and_connect_the_dots_together' => 'Create zone by click on map and connect the dots together',
@@ -3142,8 +3142,8 @@ _Message' => 'Customer notification for provider bid offer
                                                     jpeg,
                                                     gif Image
                                                     Size -
-                                                    maximum size 2 MB Image Ratio - 1:1' => 'Image format - jpg  png
-                                                    jpeg
+                                                    maximum size 2 MB Image Ratio - 1:1' => 'Image format - jpg, png,
+                                                    jpeg,
                                                     gif Image
                                                     Size -
                                                     maximum size 2 MB Image Ratio - 1:1',
@@ -7231,34 +7231,10 @@ _Message' => 'Customer notification for provider bid offer
   'Open in Google Maps' => 'Open in Google Maps',
   'House' => 'House',
   'Floor' => 'Floor',
-  'If enable this, newly uploaded/created files and data will store to local
-                                                                            storage.' => 'If enable this, newly uploaded/created files and data will store to local
-                                                                            storage.',
-  'Image format - jpg, png,
-                                                jpeg,
-                                                gif Image
-                                                Size -
-                                                maximum size 2 MB Image Ratio - 1:1' => 'Image format - jpg, png,
-                                                jpeg,
-                                                gif Image
-                                                Size -
-                                                maximum size 2 MB Image Ratio - 1:1',
   'The images.0 must be a file of type: jpeg, png, jpg.' => 'The images.0 must be a file of type: jpeg, png, jpg.',
   'The images.1 must be a file of type: jpeg, png, jpg.' => 'The images.1 must be a file of type: jpeg, png, jpg.',
   'The images.1 must be an image.' => 'The images.1 must be an image.',
   'The images.10 must be a file of type: jpeg, png, jpg.' => 'The images.10 must be a file of type: jpeg, png, jpg.',
-  'Please update your account details with accurate information. This information will be used by the admin for processing withdrawal request transaction
-' => 'Please update your account details with accurate information. This information will be used by the admin for processing withdrawal request transaction
-',
-  'Image format - jpg, png,
-                                                    jpeg,
-                                                    gif Image
-                                                    Size -
-                                                    maximum size 2 MB Image Ratio - 1:1' => 'Image format - jpg, png,
-                                                    jpeg,
-                                                    gif Image
-                                                    Size -
-                                                    maximum size 2 MB Image Ratio - 1:1',
   'Phone already taken by another account' => 'Phone already taken by another account',
   'Car Details' => 'Car Details',
   'Not Specified' => 'Not Specified',
@@ -7334,11 +7310,6 @@ _Message' => 'Customer notification for provider bid offer
   'add_now' => 'Add now',
   'categories_available' => 'Categories available',
   'choose_a_category_from_the_list' => 'Choose a category from the list',
-  'click_this_icon_to_start_pin_points_in_the_map_and_connect_them_
-                                                        to_draw_a_
-                                                        zone_._Minimum_3_points_required' => 'Click this icon to start pin points in the map and connect them 
-                                                        to draw a 
-                                                        zone . Minimum 3 points required',
   'Customer_Service_Address' => 'Customer Service Address',
   'Structured Address' => 'Structured Address',
   'House / Flat No.' => 'House / Flat No.',
@@ -7552,21 +7523,6 @@ _Message' => 'Customer notification for provider bid offer
   'e.g. London' => 'E.g. London',
   'e.g. SW1A 2AA' => 'E.g. SW1A 2AA',
   'JPG, PNG, GIF format. Max size 2MB.' => 'JPG, PNG, GIF format. Max size 2MB.',
-  'Select the project for which you want to configure FCM from the Firebase
-                                            Console dashboard.' => 'Select the project for which you want to configure FCM from the Firebase
-                                            Console dashboard.',
-  'gear icon,
-                                            there you will vae a dropdown. and then select ' => 'Gear icon,
-                                            there you will vae a dropdown. and then select ',
-  'In the Project settings page, click on the "Cloud Messaging" tab from the
-                                            top menu.' => 'In the Project settings page, click on the  Cloud Messaging  tab from the
-                                            top menu.',
-  'From Cloud Messaging Page there will be a section called Cloud Messaging
-                                            API.' => 'From Cloud Messaging Page there will be a section called Cloud Messaging
-                                            API.',
-  'Refresh the Cloud Messaging Page - You will have your server key. Just copy
-                                            the code and paste here' => 'Refresh the Cloud Messaging Page - You will have your server key. Just copy
-                                            the code and paste here',
   'Notification Delivery Timing' => 'Notification Delivery Timing',
   'Send Immediately' => 'Send Immediately',
   'Schedule for Later' => 'Schedule for Later',
@@ -7584,27 +7540,17 @@ _Message' => 'Customer notification for provider bid offer
   'Push notification sent successfully' => 'Push notification sent successfully',
   'Select the exact future date and time.' => 'Select the exact future date and time.',
   'Current Server Time' => 'Current Server Time',
-  'Where
-                                        to Get This Information' => 'Where
-                                        to Get This Information',
-  'Click to
-                                                                    upload' => 'Click to
-                                                                    upload',
-  'Please ensure that your firebase configuration is set up before using these
-                                                features.' => 'Please ensure that your firebase configuration is set up before using these
-                                                features.',
-  'For configuring otp in the firebase you must create a firebase project first.
-                            If you have not created any project for your application yet please create a
-                            project first.' => 'For configuring otp in the firebase you must create a firebase project first.
-                            If you have not created any project for your application yet please create a
-                            project first.',
-  'Firebase
-                                console' => 'Firebase
-                                console',
-  'Navigate to the build menu from the left sidebar and select
-                                authentication.' => 'Navigate to the build menu from the left sidebar and select
-                                authentication.',
-  'Got
-                                it' => 'Got
-                                it',
+  'Date & Time Slot(s)' => 'Date & Time Slot(s)',
+  'Add More Date' => 'Add More Date',
+  'You can add multiple dates and times. Click "+ Add More Date" to schedule more.' => 'You can add multiple dates and times. Click  + Add More Date  to schedule more.',
+  'Daily Send Time Slot(s)' => 'Daily Send Time Slot(s)',
+  'Add More Time' => 'Add More Time',
+  'Notification will automatically fire every day at each configured time slot.' => 'Notification will automatically fire every day at each configured time slot.',
+  'Please select at least one date and time slot' => 'Please select at least one date and time slot',
+  'Please select at least one daily send time' => 'Please select at least one daily send time',
+  'Push notification scheduled successfully for 2 date/time slot(s)' => 'Push notification scheduled successfully for 2 date/time slot(s)',
+  'Pending delivery' => 'Pending delivery',
+  'Scheduled' => 'Scheduled',
+  'Daily push notification scheduled successfully for 2 time slot(s)' => 'Daily push notification scheduled successfully for 2 time slot(s)',
+  'Daily at' => 'Daily at',
 );

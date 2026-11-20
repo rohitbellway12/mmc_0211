@@ -127,19 +127,11 @@ class PushNotificationController extends Controller
             'to_users' => 'required|array',
             'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
             'zone_ids' => 'required|array',
-            'zone_ids.*' => 'uuid',
             'cover_image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000',
             'send_type' => 'required|in:immediate,scheduled',
             'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
-            'scheduled_at' => [
-                'nullable',
-                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'once'),
-                'date',
-            ],
-            'scheduled_time' => [
-                'nullable',
-                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'daily'),
-            ],
+            'scheduled_at' => 'nullable',
+            'scheduled_time' => 'nullable',
         ]);
 
         $image_name = file_uploader('push-notification/', 'png', $request->file('cover_image'));
@@ -158,30 +150,40 @@ class PushNotificationController extends Controller
             $filteredUsers = array_keys(array_filter($permissionsMap));
         }
 
+        $rawZoneIds = $validatedData['zone_ids'] ?? [];
+        $hasAllZones = in_array('all', $rawZoneIds, true);
+        if ($hasAllZones) {
+            $savedZoneIds = $this->zone->ofStatus(1)->pluck('id')->toArray();
+        } else {
+            $savedZoneIds = $rawZoneIds;
+        }
+
         $sendType = $request->input('send_type', 'immediate');
         $repeatType = $request->input('repeat_type', 'once');
-        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? $request->input('scheduled_at') : null;
-        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? $request->input('scheduled_time') : null;
         $isImmediate = ($sendType === 'immediate');
 
-        $this->pushNotification->create([
-            'title' => $validatedData['title'],
-            'description' => $validatedData['description'],
-            'to_users' => $filteredUsers,
-            'zone_ids' => $validatedData['zone_ids'] ?? [],
-            'cover_image' => $image_name,
-            'is_active' => 1,
-            'send_type' => $sendType,
-            'repeat_type' => $repeatType,
-            'scheduled_at' => $scheduledAt,
-            'scheduled_time' => $scheduledTime,
-            'is_sent' => $isImmediate ? 1 : 0,
-            'last_sent_at' => $isImmediate ? now() : null,
-        ]);
-
         if ($isImmediate) {
+            $this->pushNotification->create([
+                'title' => $validatedData['title'],
+                'description' => $validatedData['description'],
+                'to_users' => $filteredUsers,
+                'zone_ids' => $savedZoneIds,
+                'cover_image' => $image_name,
+                'is_active' => 1,
+                'send_type' => 'immediate',
+                'repeat_type' => 'once',
+                'scheduled_at' => null,
+                'scheduled_time' => null,
+                'is_sent' => 1,
+                'last_sent_at' => now(),
+            ]);
+
             foreach ($filteredUsers as $user_type) {
-                foreach ($validatedData['zone_ids'] as $zone_id) {
+                try {
+                    topic_notification("{$user_type}-all", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
+                } catch (\Exception $e) {}
+
+                foreach ($savedZoneIds as $zone_id) {
                     try {
                         topic_notification("{$user_type}-{$zone_id}", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
                     } catch (\Exception $e) {
@@ -190,11 +192,68 @@ class PushNotificationController extends Controller
                 }
             }
 
-            $this->sendDeviceNotificationsToUsers($filteredUsers, $validatedData['zone_ids'] ?? [], $validatedData['title'], $validatedData['description'], $image_name);
+            $this->sendDeviceNotificationsToUsers($filteredUsers, $savedZoneIds, $validatedData['title'], $validatedData['description'], $image_name, $hasAllZones);
 
             Toastr::success(translate('Push notification sent successfully'));
         } else {
-            Toastr::success(translate('Push notification scheduled successfully'));
+            // Scheduled Delivery: Multi-date or multi-time support
+            if ($repeatType === 'once') {
+                $rawDates = $request->input('scheduled_at', []);
+                $dates = is_array($rawDates) ? array_values(array_filter($rawDates)) : array_filter([$rawDates]);
+
+                if (empty($dates)) {
+                    Toastr::error(translate('Please select at least one date and time slot'));
+                    return back()->withInput();
+                }
+
+                foreach ($dates as $slot) {
+                    $this->pushNotification->create([
+                        'title' => $validatedData['title'],
+                        'description' => $validatedData['description'],
+                        'to_users' => $filteredUsers,
+                        'zone_ids' => $savedZoneIds,
+                        'cover_image' => $image_name,
+                        'is_active' => 1,
+                        'send_type' => 'scheduled',
+                        'repeat_type' => 'once',
+                        'scheduled_at' => $slot,
+                        'scheduled_time' => null,
+                        'is_sent' => 0,
+                        'last_sent_at' => null,
+                    ]);
+                }
+
+                $slotCount = count($dates);
+                Toastr::success(translate("Push notification scheduled successfully for {$slotCount} date/time slot(s)"));
+            } elseif ($repeatType === 'daily') {
+                $rawTimes = $request->input('scheduled_time', []);
+                $times = is_array($rawTimes) ? array_values(array_filter($rawTimes)) : array_filter([$rawTimes]);
+
+                if (empty($times)) {
+                    Toastr::error(translate('Please select at least one daily send time'));
+                    return back()->withInput();
+                }
+
+                foreach ($times as $timeSlot) {
+                    $this->pushNotification->create([
+                        'title' => $validatedData['title'],
+                        'description' => $validatedData['description'],
+                        'to_users' => $filteredUsers,
+                        'zone_ids' => $savedZoneIds,
+                        'cover_image' => $image_name,
+                        'is_active' => 1,
+                        'send_type' => 'scheduled',
+                        'repeat_type' => 'daily',
+                        'scheduled_at' => null,
+                        'scheduled_time' => $timeSlot,
+                        'is_sent' => 0,
+                        'last_sent_at' => null,
+                    ]);
+                }
+
+                $timeCount = count($times);
+                Toastr::success(translate("Daily push notification scheduled successfully for {$timeCount} time slot(s)"));
+            }
         }
 
         return back();
@@ -219,22 +278,26 @@ class PushNotificationController extends Controller
             return $permissionsMap[$user] ? $user : null;
         }, $pushNotification['to_users']));
 
-
         if (in_array('all', $pushNotification['to_users'], true)) {
             $filteredUsers = array_keys(array_filter($permissionsMap));
         }
 
+        $zoneIds = $pushNotification['zone_ids'] ?? [];
+        $hasAllZones = in_array('all', $zoneIds, true);
+
         foreach ($filteredUsers as $user_type) {
-            foreach ($pushNotification['zone_ids'] as $zone_id) {
+            try {
+                topic_notification("{$user_type}-all", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general');
+            } catch (\Exception $exception) {}
+
+            foreach ($zoneIds as $zone_id) {
                 try {
                     topic_notification("{$user_type}-{$zone_id}", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general');
-                }catch (\Exception $exception){
-                    //
-                }
+                } catch (\Exception $exception) {}
             }
         }
 
-        $this->sendDeviceNotificationsToUsers($filteredUsers, $pushNotification['zone_ids'] ?? [], $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image']);
+        $this->sendDeviceNotificationsToUsers($filteredUsers, $zoneIds, $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], $hasAllZones);
 
         Toastr::success(translate('push notification send successfully'));
         return back();
@@ -281,31 +344,41 @@ class PushNotificationController extends Controller
             'to_users' => 'required|array',
             'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
             'zone_ids' => 'required|array',
-            'zone_ids.*' => 'uuid',
             'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
             'send_type' => 'required|in:immediate,scheduled',
             'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
-            'scheduled_at' => [
-                'nullable',
-                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'once'),
-                'date',
-            ],
-            'scheduled_time' => [
-                'nullable',
-                Rule::requiredIf(fn () => $request->send_type === 'scheduled' && $request->repeat_type === 'daily'),
-            ],
+            'scheduled_at' => 'nullable',
+            'scheduled_time' => 'nullable',
         ]);
 
         $pushNotification = $this->pushNotification->where(['id' => $id])->first();
+        if (!$pushNotification) {
+            Toastr::error(translate('Push notification not found'));
+            return back();
+        }
+
+        $rawZoneIds = $request->input('zone_ids', []);
+        if (in_array('all', $rawZoneIds, true)) {
+            $savedZoneIds = $this->zone->ofStatus(1)->pluck('id')->toArray();
+        } else {
+            $savedZoneIds = $rawZoneIds;
+        }
+
         $pushNotification->title = $request['title'];
         $pushNotification->description = $request['description'];
         $pushNotification->to_users = $request['to_users'];
-        $pushNotification->zone_ids = $request['zone_ids'];
+        $pushNotification->zone_ids = $savedZoneIds;
 
         $sendType = $request->input('send_type', 'immediate');
         $repeatType = $request->input('repeat_type', 'once');
-        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? $request->input('scheduled_at') : null;
-        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? $request->input('scheduled_time') : null;
+
+        $rawScheduledAt = $request->input('scheduled_at', []);
+        $dates = is_array($rawScheduledAt) ? array_values(array_filter($rawScheduledAt)) : array_filter([$rawScheduledAt]);
+        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? ($dates[0] ?? null) : null;
+
+        $rawScheduledTime = $request->input('scheduled_time', []);
+        $times = is_array($rawScheduledTime) ? array_values(array_filter($rawScheduledTime)) : array_filter([$rawScheduledTime]);
+        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? ($times[0] ?? null) : null;
 
         $pushNotification->send_type = $sendType;
         $pushNotification->repeat_type = $repeatType;
@@ -314,6 +387,7 @@ class PushNotificationController extends Controller
 
         if ($sendType === 'scheduled') {
             $pushNotification->is_sent = 0;
+            $pushNotification->last_sent_at = null;
         }
 
         if ($request->has('cover_image')) {
@@ -321,6 +395,45 @@ class PushNotificationController extends Controller
         }
 
         $pushNotification->save();
+
+        // Additional slots created if more than 1 slot provided during edit
+        if ($sendType === 'scheduled') {
+            if ($repeatType === 'once' && count($dates) > 1) {
+                for ($i = 1; $i < count($dates); $i++) {
+                    $this->pushNotification->create([
+                        'title' => $pushNotification->title,
+                        'description' => $pushNotification->description,
+                        'to_users' => $pushNotification->to_users,
+                        'zone_ids' => $pushNotification->zone_ids,
+                        'cover_image' => $pushNotification->cover_image,
+                        'is_active' => 1,
+                        'send_type' => 'scheduled',
+                        'repeat_type' => 'once',
+                        'scheduled_at' => $dates[$i],
+                        'scheduled_time' => null,
+                        'is_sent' => 0,
+                        'last_sent_at' => null,
+                    ]);
+                }
+            } elseif ($repeatType === 'daily' && count($times) > 1) {
+                for ($i = 1; $i < count($times); $i++) {
+                    $this->pushNotification->create([
+                        'title' => $pushNotification->title,
+                        'description' => $pushNotification->description,
+                        'to_users' => $pushNotification->to_users,
+                        'zone_ids' => $pushNotification->zone_ids,
+                        'cover_image' => $pushNotification->cover_image,
+                        'is_active' => 1,
+                        'send_type' => 'scheduled',
+                        'repeat_type' => 'daily',
+                        'scheduled_at' => null,
+                        'scheduled_time' => $times[$i],
+                        'is_sent' => 0,
+                        'last_sent_at' => null,
+                    ]);
+                }
+            }
+        }
 
         Toastr::success(translate(DEFAULT_UPDATE_200['message']));
         return back();
@@ -393,7 +506,7 @@ class PushNotificationController extends Controller
     /**
      * Send direct device notifications to targeted users with active FCM tokens.
      */
-    private function sendDeviceNotificationsToUsers(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage): void
+    private function sendDeviceNotificationsToUsers(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage, bool $hasAllZones = false): void
     {
         $tokens = [];
         $imageUrl = null;
@@ -413,7 +526,7 @@ class PushNotificationController extends Controller
                 ->where('is_active', 1)
                 ->whereNotNull('fcm_token')
                 ->where('fcm_token', '!=', '')
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->where(function ($sub) use ($zoneIds) {
                         $sub->whereHas('addresses', function ($aq) use ($zoneIds) {
                             $aq->whereIn('zone_id', $zoneIds);
@@ -429,7 +542,7 @@ class PushNotificationController extends Controller
         // 2. Providers
         if (in_array('provider-admin', $filteredUsers)) {
             $providerUserIds = Provider::where('is_active', 1)
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
                 })
                 ->pluck('user_id')
@@ -448,7 +561,7 @@ class PushNotificationController extends Controller
         // 3. Servicemen
         if (in_array('provider-serviceman', $filteredUsers)) {
             $providerIds = Provider::where('is_active', 1)
-                ->when(!empty($zoneIds), function ($query) use ($zoneIds) {
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
                 })
                 ->pluck('id')
