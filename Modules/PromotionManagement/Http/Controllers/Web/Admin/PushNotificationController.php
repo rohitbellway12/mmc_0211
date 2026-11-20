@@ -127,7 +127,11 @@ class PushNotificationController extends Controller
             'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
             'zone_ids' => 'required|array',
             'zone_ids.*' => 'uuid',
-            'cover_image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000'
+            'cover_image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000',
+            'send_type' => 'required|in:immediate,scheduled',
+            'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
+            'scheduled_at' => 'nullable|required_if:repeat_type,once|date',
+            'scheduled_time' => 'nullable|required_if:repeat_type,daily',
         ]);
 
         $image_name = file_uploader('push-notification/', 'png', $request->file('cover_image'));
@@ -146,6 +150,12 @@ class PushNotificationController extends Controller
             $filteredUsers = array_keys(array_filter($permissionsMap));
         }
 
+        $sendType = $request->input('send_type', 'immediate');
+        $repeatType = $request->input('repeat_type', 'once');
+        $scheduledAt = ($sendType === 'scheduled' && $repeatType === 'once') ? $request->input('scheduled_at') : null;
+        $scheduledTime = ($sendType === 'scheduled' && $repeatType === 'daily') ? $request->input('scheduled_time') : null;
+        $isImmediate = ($sendType === 'immediate');
+
         $this->pushNotification->create([
             'title' => $validatedData['title'],
             'description' => $validatedData['description'],
@@ -153,18 +163,32 @@ class PushNotificationController extends Controller
             'zone_ids' => $validatedData['zone_ids'] ?? [],
             'cover_image' => $image_name,
             'is_active' => 1,
+            'send_type' => $sendType,
+            'repeat_type' => $repeatType,
+            'scheduled_at' => $scheduledAt,
+            'scheduled_time' => $scheduledTime,
+            'is_sent' => $isImmediate ? 1 : 0,
+            'last_sent_at' => $isImmediate ? now() : null,
         ]);
 
-
-        foreach ($filteredUsers as $user_type) {
-            foreach ($validatedData['zone_ids'] as $zone_id) {
-                topic_notification("{$user_type}-{$zone_id}", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
+        if ($isImmediate) {
+            foreach ($filteredUsers as $user_type) {
+                foreach ($validatedData['zone_ids'] as $zone_id) {
+                    try {
+                        topic_notification("{$user_type}-{$zone_id}", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
+                    } catch (\Exception $e) {
+                        // ignore
+                    }
+                }
             }
+
+            $this->sendDeviceNotificationsToUsers($filteredUsers, $validatedData['zone_ids'] ?? [], $validatedData['title'], $validatedData['description'], $image_name);
+
+            Toastr::success(translate('Push notification sent successfully'));
+        } else {
+            Toastr::success(translate('Push notification scheduled successfully'));
         }
 
-        $this->sendDeviceNotificationsToUsers($filteredUsers, $validatedData['zone_ids'] ?? [], $validatedData['title'], $validatedData['description'], $image_name);
-
-        Toastr::success(translate(BANNER_CREATE_200['message']));
         return back();
     }
 

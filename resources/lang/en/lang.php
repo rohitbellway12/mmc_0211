@@ -7552,4 +7552,31 @@ _Message' => 'Customer notification for provider bid offer
   'e.g. London' => 'E.g. London',
   'e.g. SW1A 2AA' => 'E.g. SW1A 2AA',
   'JPG, PNG, GIF format. Max size 2MB.' => 'JPG, PNG, GIF format. Max size 2MB.',
+  'Select the project for which you want to configure FCM from the Firebase
+                                            Console dashboard.' => 'Select the project for which you want to configure FCM from the Firebase
+                                            Console dashboard.',
+  'gear icon,
+                                            there you will vae a dropdown. and then select ' => 'Gear icon,
+                                            there you will vae a dropdown. and then select ',
+  'In the Project settings page, click on the "Cloud Messaging" tab from the
+                                            top menu.' => 'In the Project settings page, click on the  Cloud Messaging  tab from the
+                                            top menu.',
+  'From Cloud Messaging Page there will be a section called Cloud Messaging
+                                            API.' => 'From Cloud Messaging Page there will be a section called Cloud Messaging
+                                            API.',
+  'Refresh the Cloud Messaging Page - You will have your server key. Just copy
+                                            the code and paste here' => 'Refresh the Cloud Messaging Page - You will have your server key. Just copy
+                                            the code and paste here',
+  'Notification Delivery Timing' => 'Notification Delivery Timing',
+  'Send Immediately' => 'Send Immediately',
+  'Schedule for Later' => 'Schedule for Later',
+  'Frequency / Repeat' => 'Frequency / Repeat',
+  'One-Time (Specific Date & Time)' => 'One-Time (Specific Date & Time)',
+  'Daily Repeating (Every Day at Time)' => 'Daily Repeating (Every Day at Time)',
+  'Date & Time' => 'Date & Time',
+  'Select the exact future date and time when this notification should be sent.' => 'Select the exact future date and time when this notification should be sent.',
+  'Daily Send Time' => 'Daily Send Time',
+  'Notification will automatically fire every day at this time.' => 'Notification will automatically fire every day at this time.',
+  'Delivery / Timing' => 'Delivery / Timing',
+  'Immediate' => 'Immediate',
 );

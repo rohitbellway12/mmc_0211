@@ -107,6 +107,51 @@
                                                             </span>
                                                         </div>
                                                     </div>
+
+                                                    {{-- Scheduling Options --}}
+                                                    <div class="col-12 mt-3 pt-3 border-top">
+                                                        <div class="mb-2 text-dark d-flex align-items-center gap-2 fw-semibold fz-14">
+                                                            <span class="material-icons fz-18 text-primary">schedule</span>
+                                                            {{translate('Notification Delivery Timing')}}
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-4 align-items-center my-2 p-3 bg-white rounded border">
+                                                            <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                                <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_immediate" value="immediate" {{ old('send_type', 'immediate') == 'immediate' ? 'checked' : '' }}>
+                                                                <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_immediate">
+                                                                    <strong>{{translate('Send Immediately')}}</strong>
+                                                                </label>
+                                                            </div>
+                                                            <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                                <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_scheduled" value="scheduled" {{ old('send_type') == 'scheduled' ? 'checked' : '' }}>
+                                                                <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_scheduled">
+                                                                    <strong>{{translate('Schedule for Later')}}</strong>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Scheduled Options Box --}}
+                                                        <div id="scheduled_delivery_options" class="mt-3 p-3 bg-white rounded border {{ old('send_type') == 'scheduled' ? '' : 'd-none' }}">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Frequency / Repeat')}}</label>
+                                                                    <select class="form-select select-repeat-type theme-input-style" name="repeat_type" id="repeat_type">
+                                                                        <option value="once" {{ old('repeat_type', 'once') == 'once' ? 'selected' : '' }}>{{translate('One-Time (Specific Date & Time)')}}</option>
+                                                                        <option value="daily" {{ old('repeat_type') == 'daily' ? 'selected' : '' }}>{{translate('Daily Repeating (Every Day at Time)')}}</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-5" id="scheduled_at_wrapper">
+                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Date & Time')}} <span class="text-danger">*</span></label>
+                                                                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at" id="scheduled_at" value="{{ old('scheduled_at') }}">
+                                                                    <div class="fz-11 text-muted mt-1">{{translate('Select the exact future date and time when this notification should be sent.')}}</div>
+                                                                </div>
+                                                                <div class="col-md-5 d-none" id="scheduled_time_wrapper">
+                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Daily Send Time')}} <span class="text-danger">*</span></label>
+                                                                    <input type="time" class="form-control theme-input-style" name="scheduled_time" id="scheduled_time" value="{{ old('scheduled_time') }}">
+                                                                    <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at this time.')}}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -223,6 +268,7 @@
                                                     <th class="text-dark fw-medium bg-light">{{translate('description')}}</th>
                                                     <th class="text-dark fw-medium bg-light">{{translate('send_to')}}</th>
                                                     <th class="text-dark fw-medium bg-light">{{translate('zones')}}</th>
+                                                    <th class="text-dark fw-medium bg-light">{{translate('Delivery / Timing')}}</th>
                                                     @can('push_notification_manage_status')
                                                         <th class="text-dark fw-medium bg-light">{{translate('status')}}</th>
                                                     @endcan
@@ -261,6 +307,29 @@
                                                                 {{$zone['name']}}{{$key+1==count($item->zone_ids)?'':','}}
                                                             @endforeach
                                                         </div>
+                                                    </td>
+                                                    <td>
+                                                        @if(($item->send_type ?? 'immediate') == 'immediate')
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                                <span class="material-icons fz-12 align-middle">done_all</span> {{translate('Immediate')}}
+                                                            </span>
+                                                        @elseif($item->repeat_type == 'daily')
+                                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" title="{{translate('Daily at')}} {{ $item->scheduled_time ? \Carbon\Carbon::parse($item->scheduled_time)->format('h:i A') : '' }}">
+                                                                <span class="material-icons fz-12 align-middle">repeat</span> {{translate('Daily')}} ({{ $item->scheduled_time ? \Carbon\Carbon::parse($item->scheduled_time)->format('h:i A') : '' }})
+                                                            </span>
+                                                        @else
+                                                            @if($item->is_sent)
+                                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" title="{{translate('Sent at')}} {{ $item->last_sent_at ? $item->last_sent_at->format('d M Y, h:i A') : '' }}">
+                                                                    <span class="material-icons fz-12 align-middle">done</span> {{translate('Sent')}}
+                                                                </span>
+                                                                <div class="fz-11 text-muted mt-1">{{ $item->scheduled_at ? $item->scheduled_at->format('d M Y, h:i A') : '' }}</div>
+                                                            @else
+                                                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1" title="{{translate('Pending delivery')}}">
+                                                                    <span class="material-icons fz-12 align-middle">schedule</span> {{translate('Scheduled')}}
+                                                                </span>
+                                                                <div class="fz-11 text-muted mt-1">{{ $item->scheduled_at ? $item->scheduled_at->format('d M Y, h:i A') : '' }}</div>
+                                                            @endif
+                                                        @endif
                                                     </td>
                                                     @can('push_notification_manage_status')
                                                         <td>
@@ -717,6 +786,31 @@
         function resetCheckboxState() {
             if (selectedNotificationItem) {
                 selectedNotificationItem.prop('checked', !notificationInitialState);
+            }
+        }
+
+        // Toggle Scheduled Delivery Options
+        $('.send-type-radio').on('change', function () {
+            if ($('#send_type_scheduled').is(':checked')) {
+                $('#scheduled_delivery_options').removeClass('d-none');
+                toggleRepeatInputs();
+            } else {
+                $('#scheduled_delivery_options').addClass('d-none');
+            }
+        });
+
+        $('#repeat_type').on('change', function () {
+            toggleRepeatInputs();
+        });
+
+        function toggleRepeatInputs() {
+            let repeat = $('#repeat_type').val();
+            if (repeat === 'daily') {
+                $('#scheduled_at_wrapper').addClass('d-none');
+                $('#scheduled_time_wrapper').removeClass('d-none');
+            } else {
+                $('#scheduled_at_wrapper').removeClass('d-none');
+                $('#scheduled_time_wrapper').addClass('d-none');
             }
         }
 

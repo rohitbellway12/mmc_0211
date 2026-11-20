@@ -17,13 +17,17 @@ class PushNotification extends Model
         'zone_ids' => 'array',
         'to_users' => 'array',
         'is_active' => 'integer',
+        'is_sent' => 'integer',
+        'scheduled_at' => 'datetime',
+        'last_sent_at' => 'datetime',
     ];
 
     protected $appends = ['cover_image_full_path'];
 
     protected $fillable = [
         'id', 'title', 'description', 'to_users', 'zone_ids', 'cover_image', 'is_active',
-        'notification_type', 'booking_id', 'booking_status', 'reference_id'
+        'notification_type', 'booking_id', 'booking_status', 'reference_id',
+        'send_type', 'repeat_type', 'scheduled_at', 'scheduled_time', 'is_sent', 'last_sent_at'
     ];
 
     public function getNotificationTypeAttribute($value)
