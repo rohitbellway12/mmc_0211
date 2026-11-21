@@ -136,7 +136,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                 </li>
             @endcan
 
-            {{-- Promotion Management Commented Out
+                        {{-- Promotion Management Commented Out
             @canany(['discount_view', 'discount_add', 'coupon_view', 'coupon_add', 'bonus_view', 'bonus_add',
                 'campaign_view', 'campaign_add', 'advertisement_view', 'advertisement_add', 'banner_add', 'banner_view'])
                 <li class="nav-category" title="{{ translate('promotion_management') }}">
@@ -298,6 +298,13 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                         class="{{ request()->is('admin/push-notification/*') ? 'active-menu' : '' }}">
                         <span class="material-icons" title="{{ translate('push_notification') }}">send</span>
                         <span class="link-title">{{ translate('Send Notifications') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.booking-reminder.index') }}"
+                        class="{{ request()->is('admin/booking-reminder/*') ? 'active-menu' : '' }}">
+                        <span class="material-icons" title="{{ translate('booking_reminders') }}">alarm</span>
+                        <span class="link-title">{{ translate('Booking Reminders') }}</span>
                     </a>
                 </li>
             @endcanany

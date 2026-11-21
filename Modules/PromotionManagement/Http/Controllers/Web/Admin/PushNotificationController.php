@@ -605,27 +605,19 @@ class PushNotificationController extends Controller
     }
 
     /**
-     * Convert client browser time to the server's default timezone so cron checks match perfectly.
+     * Parse and format datetime or time directly in company timezone without client offset shifting.
      */
-    private function convertToSystemTimezone(?string $timeString, ?int $userTzOffset, string $type = 'datetime'): ?string
+    private function convertToSystemTimezone(?string $timeString, ?int $userTzOffset = null, string $type = 'datetime'): ?string
     {
-        if (empty($timeString) || $userTzOffset === null) {
-            return $timeString;
+        if (empty($timeString)) {
+            return null;
         }
 
         try {
-            $hours = intdiv(-$userTzOffset, 60);
-            $mins = abs($userTzOffset) % 60;
-            $userTzString = sprintf('%+03d:%02d', $hours, $mins);
-            $systemTz = date_default_timezone_get();
-
             if ($type === 'time') {
-                $today = now()->toDateString();
-                $userTime = Carbon::parse("{$today} {$timeString}", $userTzString);
-                return $userTime->setTimezone($systemTz)->format('H:i:s');
+                return Carbon::parse($timeString)->format('H:i:s');
             } else {
-                $userTime = Carbon::parse($timeString, $userTzString);
-                return $userTime->setTimezone($systemTz)->format('Y-m-d H:i:s');
+                return Carbon::parse($timeString)->format('Y-m-d H:i:s');
             }
         } catch (\Exception $e) {
             return $timeString;

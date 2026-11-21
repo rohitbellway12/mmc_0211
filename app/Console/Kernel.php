@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('notification:send-scheduled')->everyMinute()->withoutOverlapping();
+        $schedule->command('booking:send-reminders')->everyMinute()->withoutOverlapping();
     }
 
     /**

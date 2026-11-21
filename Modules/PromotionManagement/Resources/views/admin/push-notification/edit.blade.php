@@ -107,11 +107,11 @@
                                                     </div>
                                                     <div id="scheduled_datetime_container" class="d-flex flex-column gap-2">
                                                         <div class="d-flex align-items-center gap-2 datetime-slot-row">
-                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" id="scheduled_at" value="{{ old('scheduled_at', $pushNotification->scheduled_at ? $pushNotification->scheduled_at->format('Y-m-d\TH:i') : '') }}">
+                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" id="scheduled_at" min="{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}" value="{{ old('scheduled_at', $pushNotification->scheduled_at ? $pushNotification->scheduled_at->format('Y-m-d\TH:i') : \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i')) }}">
                                                         </div>
                                                     </div>
                                                     <div class="fz-11 text-muted mt-1">{{translate('You can add multiple dates and times. Click "+ Add More Date" to schedule more.')}}</div>
-                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }})</div>
                                                 </div>
                                                 <div class="mb-2 d-none" id="scheduled_time_wrapper">
                                                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -122,11 +122,11 @@
                                                     </div>
                                                     <div id="scheduled_time_container" class="d-flex flex-column gap-2">
                                                         <div class="d-flex align-items-center gap-2 time-slot-row">
-                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]" id="scheduled_time" value="{{ old('scheduled_time', $pushNotification->scheduled_time ?? '') }}">
+                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]" id="scheduled_time" value="{{ old('scheduled_time', $pushNotification->scheduled_time ?? \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i')) }}">
                                                         </div>
                                                     </div>
                                                     <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
-                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }})</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -191,10 +191,10 @@
             }
         });
 
-        $(document).ready(function () {
-            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
-            $('.js-select').select2();
-        });
+        const COMPANY_TIMEZONE = "{{ date_default_timezone_get() }}";
+        const COMPANY_NOW_DATETIME = "{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}";
+        const COMPANY_MIN_DATETIME = "{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}";
+        const COMPANY_NOW_TIME = "{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}";
 
         $(document).ready(function () {
             $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
@@ -249,7 +249,7 @@
             $('#add_more_datetime_btn').on('click', function () {
                 let rowHtml = `
                     <div class="d-flex align-items-center gap-2 datetime-slot-row">
-                        <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                        <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="${COMPANY_MIN_DATETIME}" value="${COMPANY_NOW_DATETIME}">
                         <button type="button" class="btn btn-sm btn--danger p-1 remove-datetime-row" title="{{translate('Remove')}}">
                             <span class="material-icons fz-18">delete</span>
                         </button>
@@ -266,7 +266,7 @@
             $('#add_more_time_btn').on('click', function () {
                 let rowHtml = `
                     <div class="d-flex align-items-center gap-2 time-slot-row">
-                        <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                        <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="${COMPANY_NOW_TIME}">
                         <button type="button" class="btn btn-sm btn--danger p-1 remove-time-row" title="{{translate('Remove')}}">
                             <span class="material-icons fz-18">delete</span>
                         </button>
@@ -277,6 +277,18 @@
 
             $(document).on('click', '.remove-time-row', function () {
                 $(this).closest('.time-slot-row').remove();
+            });
+
+            // Ensure focused empty inputs default to company time so picker opens on company timezone
+            $(document).on('focus', 'input[type="datetime-local"]', function () {
+                if (!$(this).val()) {
+                    $(this).val(COMPANY_NOW_DATETIME);
+                }
+            });
+            $(document).on('focus', 'input[type="time"]', function () {
+                if (!$(this).val()) {
+                    $(this).val(COMPANY_NOW_TIME);
+                }
             });
 
             // Form Submit Validation

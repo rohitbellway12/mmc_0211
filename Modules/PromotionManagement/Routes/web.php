@@ -89,6 +89,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin',
         Route::get('resend/{id}', 'PushNotificationController@resendNotification')->name('resend');
     });
 
+    Route::group(['prefix' => 'booking-reminder', 'as' => 'booking-reminder.'], function () {
+        Route::get('index', 'BookingReminderController@index')->name('index');
+        Route::post('update', 'BookingReminderController@update')->name('update');
+        Route::post('test-send', 'BookingReminderController@testSend')->name('test-send');
+        Route::post('run-scheduler', 'BookingReminderController@runSchedulerNow')->name('run-scheduler');
+    });
+
 });
 
 Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Web\Provider', 'middleware' => ['provider']], function () {

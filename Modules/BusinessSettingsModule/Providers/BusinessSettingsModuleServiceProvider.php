@@ -70,6 +70,7 @@ class BusinessSettingsModuleServiceProvider extends ServiceProvider
             $timezone = business_config('time_zone', 'business_information');
             if ($timezone) {
                 Config::set('timezone', $timezone->live_values);
+                Config::set('app.timezone', $timezone->live_values);
                 date_default_timezone_set($timezone->live_values);
             }
         } catch (\Exception $exception) {

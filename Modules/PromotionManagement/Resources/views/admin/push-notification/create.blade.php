@@ -149,11 +149,11 @@
                                                                     </div>
                                                                     <div id="scheduled_datetime_container" class="d-flex flex-column gap-2">
                                                                         <div class="d-flex align-items-center gap-2 datetime-slot-row">
-                                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}" value="{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}">
                                                                         </div>
                                                                     </div>
                                                                     <div class="fz-11 text-muted mt-1">{{translate('You can add multiple dates and times. Click "+ Add More Date" to schedule more.')}}</div>
-                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }})</div>
                                                                 </div>
                                                                 <div class="col-md-8 d-none" id="scheduled_time_wrapper">
                                                                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -164,11 +164,11 @@
                                                                     </div>
                                                                     <div id="scheduled_time_container" class="d-flex flex-column gap-2">
                                                                         <div class="d-flex align-items-center gap-2 time-slot-row">
-                                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}">
                                                                         </div>
                                                                     </div>
                                                                     <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
-                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }})</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -623,11 +623,11 @@
                                             </div>
                                             <div id="edit_scheduled_datetime_container" class="d-flex flex-column gap-2">
                                                 <div class="d-flex align-items-center gap-2 edit-datetime-slot-row">
-                                                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" id="edit_scheduled_at">
+                                                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" id="edit_scheduled_at" min="{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}" value="{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}">
                                                 </div>
                                             </div>
-                                            <div class="fz-11 text-muted mt-1">{{translate('Select future date and time.')}}</div>
-                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                            <div class="fz-11 text-muted mt-1">{{translate('Select future date and time in company timezone.')}}</div>
+                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }})</div>
                                         </div>
                                         <div class="mb-2 d-none" id="edit_scheduled_time_wrapper">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -638,11 +638,11 @@
                                             </div>
                                             <div id="edit_scheduled_time_container" class="d-flex flex-column gap-2">
                                                 <div class="d-flex align-items-center gap-2 edit-time-slot-row">
-                                                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]" id="edit_scheduled_time">
+                                                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]" id="edit_scheduled_time" value="{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}">
                                                 </div>
                                             </div>
                                             <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
-                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Current Server Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})</div>
+                                            <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }})</div>
                                         </div>
                                     </div>
                                 </div>
@@ -666,6 +666,11 @@
     <script src="{{asset('public/assets/admin-module')}}/plugins/select2/select2.min.js"></script>
     <script>
         "use Strict";
+
+        const COMPANY_TIMEZONE = "{{ date_default_timezone_get() }}";
+        const COMPANY_NOW_DATETIME = "{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}";
+        const COMPANY_MIN_DATETIME = "{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}";
+        const COMPANY_NOW_TIME = "{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}";
 
         $(document).ready(function () {
             $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
@@ -797,8 +802,18 @@
             $('#edit_scheduled_time_container .edit-time-slot-row:not(:first)').remove();
 
             $('#edit_repeat_type').val(repeatType);
-            $('#edit_scheduled_at').val(scheduledAt);
-            $('#edit_scheduled_time').val(scheduledTime);
+            if (!scheduledAt) {
+                $('#edit_scheduled_at').val(COMPANY_NOW_DATETIME);
+            } else {
+                $('#edit_scheduled_at').val(scheduledAt);
+            }
+            $('#edit_scheduled_at').attr('min', COMPANY_MIN_DATETIME);
+
+            if (!scheduledTime) {
+                $('#edit_scheduled_time').val(COMPANY_NOW_TIME);
+            } else {
+                $('#edit_scheduled_time').val(scheduledTime);
+            }
 
             updateEditScheduledInputsState();
         });
@@ -942,7 +957,7 @@
         $('#add_more_datetime_btn').on('click', function () {
             let rowHtml = `
                 <div class="d-flex align-items-center gap-2 datetime-slot-row">
-                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="${COMPANY_MIN_DATETIME}" value="${COMPANY_NOW_DATETIME}">
                     <button type="button" class="btn btn-sm btn--danger p-1 remove-datetime-row" title="{{translate('Remove')}}">
                         <span class="material-icons fz-18">delete</span>
                     </button>
@@ -959,7 +974,7 @@
         $('#add_more_time_btn').on('click', function () {
             let rowHtml = `
                 <div class="d-flex align-items-center gap-2 time-slot-row">
-                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="${COMPANY_NOW_TIME}">
                     <button type="button" class="btn btn-sm btn--danger p-1 remove-time-row" title="{{translate('Remove')}}">
                         <span class="material-icons fz-18">delete</span>
                     </button>
@@ -997,7 +1012,7 @@
         $('#edit_add_more_datetime_btn').on('click', function () {
             let rowHtml = `
                 <div class="d-flex align-items-center gap-2 edit-datetime-slot-row">
-                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]">
+                    <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="${COMPANY_MIN_DATETIME}" value="${COMPANY_NOW_DATETIME}">
                     <button type="button" class="btn btn-sm btn--danger p-1 remove-edit-datetime-row" title="{{translate('Remove')}}">
                         <span class="material-icons fz-18">delete</span>
                     </button>
@@ -1014,7 +1029,7 @@
         $('#edit_add_more_time_btn').on('click', function () {
             let rowHtml = `
                 <div class="d-flex align-items-center gap-2 edit-time-slot-row">
-                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]">
+                    <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="${COMPANY_NOW_TIME}">
                     <button type="button" class="btn btn-sm btn--danger p-1 remove-edit-time-row" title="{{translate('Remove')}}">
                         <span class="material-icons fz-18">delete</span>
                     </button>
@@ -1025,6 +1040,18 @@
 
         $(document).on('click', '.remove-edit-time-row', function () {
             $(this).closest('.edit-time-slot-row').remove();
+        });
+
+        // Ensure focused empty inputs default to company time so picker opens on company timezone
+        $(document).on('focus', 'input[type="datetime-local"]', function () {
+            if (!$(this).val()) {
+                $(this).val(COMPANY_NOW_DATETIME);
+            }
+        });
+        $(document).on('focus', 'input[type="time"]', function () {
+            if (!$(this).val()) {
+                $(this).val(COMPANY_NOW_TIME);
+            }
         });
 
         function toggleEditRepeatInputs() {
