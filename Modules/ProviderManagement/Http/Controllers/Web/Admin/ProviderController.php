@@ -126,9 +126,13 @@ class ProviderController extends Controller
 
         $search = $request->has('search') ? $request['search'] : '';
         $status = $request->has('status') ? $request['status'] : 'all';
-        $queryParam = ['search' => $search, 'status' => $status];
+        $isPartner = $request->has('is_partner') ? (int)$request['is_partner'] : 0;
+        $queryParam = ['search' => $search, 'status' => $status, 'is_partner' => $isPartner];
 
-        $providers = $this->provider->with(['owner', 'zone'])->where(['is_approved' => 1])->withCount(['subscribed_services', 'bookings'])
+        $providers = $this->provider->with(['owner', 'zone'])
+            ->where(['is_approved' => 1])
+            ->where('is_partner', $isPartner)
+            ->withCount(['subscribed_services', 'bookings'])
             ->when($request->has('search'), function ($query) use ($request) {
                 $keys = explode(' ', $request['search']);
                 return $query->where(function ($query) use ($keys) {
@@ -146,11 +150,11 @@ class ProviderController extends Controller
             ->paginate(pagination_limit())->appends($queryParam);
 
         $topCards = [];
-        $topCards['total_providers'] = $this->provider->ofApproval(1)->count();
-        $topCards['total_onboarding_requests'] = $this->provider->ofApproval(2)->count();
-        $topCards['total_active_providers'] = $this->provider->ofApproval(1)->ofStatus(1)->count();
-        $topCards['total_inactive_providers'] = $this->provider->ofApproval(1)->ofStatus(0)->count();
-        return view('providermanagement::admin.provider.index', compact('providers', 'topCards', 'search', 'status'));
+        $topCards['total_providers'] = $this->provider->where('is_partner', $isPartner)->ofApproval(1)->count();
+        $topCards['total_onboarding_requests'] = $this->provider->where('is_partner', $isPartner)->ofApproval(2)->count();
+        $topCards['total_active_providers'] = $this->provider->where('is_partner', $isPartner)->ofApproval(1)->ofStatus(1)->count();
+        $topCards['total_inactive_providers'] = $this->provider->where('is_partner', $isPartner)->ofApproval(1)->ofStatus(0)->count();
+        return view('providermanagement::admin.provider.index', compact('providers', 'topCards', 'search', 'status', 'isPartner'));
     }
 
     /**
@@ -993,14 +997,15 @@ class ProviderController extends Controller
 
     public function onboardingRequest(Request $request): Factory|View|Application
     {
-
         $this->authorize('onboarding_request_view');
 
         $status = 'onboarding';
         $search = $request['search'] ?? '';
-        $queryParam = ['status' => $status, 'search' => $search];
+        $isPartner = $request->has('is_partner') ? (int)$request['is_partner'] : 0;
+        $queryParam = ['status' => $status, 'search' => $search, 'is_partner' => $isPartner];
 
         $providers = $this->provider->with(['owner', 'zone'])
+            ->where('is_partner', $isPartner)
             ->ofApproval(2)
             ->when($request->has('search') && !empty($request['search']), function ($query) use ($request) {
                 $keys = explode(' ', $request['search']);
@@ -1018,10 +1023,10 @@ class ProviderController extends Controller
             ->appends($queryParam);
 
         $providersCount = [
-            'onboarding' => $this->provider->ofApproval(2)->count(),
+            'onboarding' => $this->provider->where('is_partner', $isPartner)->ofApproval(2)->count(),
         ];
 
-        return View('providermanagement::admin.provider.onboarding', compact('providers', 'search', 'status', 'providersCount'));
+        return View('providermanagement::admin.provider.onboarding', compact('providers', 'search', 'status', 'providersCount', 'isPartner'));
     }
 
     /**

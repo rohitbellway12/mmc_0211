@@ -7726,4 +7726,12 @@ _Message' => 'Customer notification for provider bid offer
   'video_url' => 'Video url',
   'Are you sure you want to delete this media item?' => 'Are you sure you want to delete this media item ',
   'Failed to delete media item.' => 'Failed to delete media item.',
+  'Partner Management' => 'Partner Management',
+  'Pending Partner Requests' => 'Pending Partner Requests',
+  'Partners' => 'Partners',
+  'Partner_List' => 'Partner List',
+  'Pending_Partner_Requests' => 'Pending Partner Requests',
+  'Total_Partners' => 'Total Partners',
+  'Active_Partners' => 'Active Partners',
+  'Inactive_Partners' => 'Inactive Partners',
 );

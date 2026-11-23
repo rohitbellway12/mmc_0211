@@ -1,12 +1,12 @@
 @extends('adminmodule::layouts.master')
 
-@section('title',translate('provider_list'))
+@section('title', ($isPartner ?? 0) ? translate('Partner_List') : translate('provider_list'))
 
 @section('content')
     <div class="main-content">
         <div class="container-fluid">
             <div class="page-title-wrap mb-30">
-                <h2 class="page-title">{{translate('Provider_List')}}</h2>
+                <h2 class="page-title">{{ ($isPartner ?? 0) ? translate('Partner_List') : translate('Provider_List') }}</h2>
             </div>
 
             <div class="row justify-content-center">
@@ -15,7 +15,7 @@
                         <div class="col-lg-3 col-sm-6">
                             <div class="statistics-card statistics-card__total_provider">
                                 <h2>{{$topCards['total_providers']}}</h2>
-                                <h3>{{translate('Total_Providers')}}</h3>
+                                <h3>{{ ($isPartner ?? 0) ? translate('Total_Partners') : translate('Total_Providers') }}</h3>
                                 <img src="{{asset('public/assets/admin-module/img/icons/subscribed-providers.png')}}"
                                      class="absolute-img" alt="{{ translate('providers') }}">
                             </div>
@@ -23,7 +23,7 @@
                         <div class="col-lg-3 col-sm-6">
                             <div class="statistics-card statistics-card__ongoing">
                                 <h2>{{$topCards['total_onboarding_requests']}}</h2>
-                                <h3>{{translate('Pending_Provider_Requests')}}</h3>
+                                <h3>{{ ($isPartner ?? 0) ? translate('Pending_Partner_Requests') : translate('Pending_Provider_Requests') }}</h3>
                                 <img src="{{asset('public/assets/admin-module/img/icons/onboarding-request.png')}}"
                                      class="absolute-img" alt="{{ translate('providers') }}">
                             </div>
@@ -31,7 +31,7 @@
                         <div class="col-lg-3 col-sm-6">
                             <div class="statistics-card statistics-card__newly_joined">
                                 <h2>{{$topCards['total_active_providers']}}</h2>
-                                <h3>{{translate('Active_Providers')}}</h3>
+                                <h3>{{ ($isPartner ?? 0) ? translate('Active_Partners') : translate('Active_Providers') }}</h3>
                                 <img src="{{asset('public/assets/admin-module/img/icons/newly-joined.png')}}"
                                      class="absolute-img" alt="{{ translate('providers') }}">
                             </div>
@@ -39,7 +39,7 @@
                         <div class="col-lg-3 col-sm-6">
                             <div class="statistics-card statistics-card__not_served">
                                 <h2>{{$topCards['total_inactive_providers']}}</h2>
-                                <h3>{{translate('Inactive_Providers')}}</h3>
+                                <h3>{{ ($isPartner ?? 0) ? translate('Inactive_Partners') : translate('Inactive_Providers') }}</h3>
                                 <img src="{{asset('public/assets/admin-module/img/icons/not-served.png')}}"
                                      class="absolute-img" alt="{{ translate('providers') }}">
                             </div>
@@ -53,26 +53,26 @@
                 <ul class="nav nav--tabs">
                     <li class="nav-item">
                         <a class="nav-link {{$status=='all'?'active':''}}"
-                           href="{{url()->current()}}?status=all">
+                           href="{{url()->current()}}?status=all&is_partner={{ $isPartner ?? 0 }}">
                             {{translate('all')}}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{$status=='active'?'active':''}}"
-                           href="{{url()->current()}}?status=active">
+                           href="{{url()->current()}}?status=active&is_partner={{ $isPartner ?? 0 }}">
                             {{translate('active')}}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{$status=='inactive'?'active':''}}"
-                           href="{{url()->current()}}?status=inactive">
+                           href="{{url()->current()}}?status=inactive&is_partner={{ $isPartner ?? 0 }}">
                             {{translate('inactive')}}
                         </a>
                     </li>
                 </ul>
 
                 <div class="d-flex gap-2 fw-medium">
-                    <span class="opacity-75">{{translate('Total_Providers')}}:</span>
+                    <span class="opacity-75">{{ ($isPartner ?? 0) ? translate('Total_Partners') : translate('Total_Providers') }}:</span>
                     <span class="title-color">{{$providers->total()}}</span>
                 </div>
             </div>
@@ -82,7 +82,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="data-table-top d-flex flex-wrap gap-10 justify-content-between">
-                                <form action="{{url()->current()}}?status={{$status}}"
+                                <form action="{{url()->current()}}?status={{$status}}&is_partner={{$isPartner ?? 0}}"
                                       class="search-form search-form_style-two"
                                       method="POST">
                                     @csrf
@@ -124,7 +124,7 @@
                                     <thead class="align-middle">
                                     <tr>
                                         <th>{{translate('Sl')}}</th>
-                                        <th>{{translate('Provider')}}</th>
+                                        <th>{{ ($isPartner ?? 0) ? translate('Partner') : translate('Provider') }}</th>
                                         <th>{{translate('Contact_Info')}}</th>
                                         <th>{{translate('Total_Subscribed_Sub_Categories')}}</th>
                                         <th>{{translate('Total_Booking_Served')}}</th>
@@ -142,7 +142,7 @@
                                         $ongoingBookings = 0;
                                         $acceptedBookings = 0;
                                     @endphp
-                                    @foreach($providers as $key => $provider)
+                                    @forelse($providers as $key => $provider)
                                         <tr>
                                             <td>{{$key+$providers->firstItem()}}</td>
                                             <td>
@@ -257,7 +257,11 @@
                                                 </td>
                                             @endcan
                                         </tr>
-                                    @endforeach
+                                    @empty
+                                        <tr class="text-center">
+                                            <td colspan="8">{{ translate('no_data_available') }}</td>
+                                        </tr>
+                                    @endforelse
                                     </tbody>
                                 </table>
                             </div>

@@ -31,7 +31,8 @@ $accepted_booking_count = \Modules\BookingModule\Entities\Booking::where('bookin
         });
     })
     ->count();
-$pending_providers = \Modules\ProviderManagement\Entities\Provider::ofApproval(2)->count();
+$pending_providers = \Modules\ProviderManagement\Entities\Provider::where('is_partner', 0)->ofApproval(2)->count();
+$pending_partners = \Modules\ProviderManagement\Entities\Provider::where('is_partner', 1)->ofApproval(2)->count();
 $denied_providers = \Modules\ProviderManagement\Entities\Provider::ofApproval(0)->count();
 $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'business_information', path: 'business/', defaultPath: 'public/assets/placeholder.png');
 ?>
@@ -340,8 +341,8 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @endcanany
             @can('onboarding_request_view')
                 <li>
-                    <a href="{{ route('admin.provider.onboarding_request', ['status' => 'onboarding']) }}"
-                        class="{{ request()->is('admin/provider/onboarding*') ? 'active-menu' : '' }}">
+                    <a href="{{ route('admin.provider.onboarding_request', ['status' => 'onboarding', 'is_partner' => 0]) }}"
+                        class="{{ request()->is('admin/provider/onboarding*') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="{{ translate('Pending Provider Requests') }}">how_to_reg</span>
                         <span class="link-title">{{ translate('Pending Provider Requests') }} <span
                                 class="count">{{ $pending_providers }}</span></span>
@@ -350,22 +351,61 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @endcan
             @canany(['provider_view', 'provider_add'])
                 <li
-                    class="has-sub-item  {{ request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*') ? 'sub-menu-opened' : '' }}">
+                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner', 0) == 0 ? 'sub-menu-opened' : '' }}">
                     <a href="#"
-                        class="{{ request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*') ? 'active-menu' : '' }}">
+                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="Providers">engineering</span>
                         <span class="link-title">{{ translate('providers') }}</span>
                     </a>
                     <ul class="nav sub-menu">
                         @can('provider_view')
                             <li>
-                                <a href="{{ route('admin.provider.list', ['status' => 'all']) }}"
-                                    class="{{ request()->is('admin/provider/list') ? 'active-menu' : '' }}">{{ translate('Provider_List') }}</a>
+                                <a href="{{ route('admin.provider.list', ['status' => 'all', 'is_partner' => 0]) }}"
+                                    class="{{ request()->is('admin/provider/list') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">{{ translate('Provider_List') }}</a>
                             </li>
                         @endcan
                         @can('provider_add')
-                            <li><a href="{{ route('admin.provider.create') }}"
-                                    class="{{ request()->is('admin/provider/create') ? 'active-menu' : '' }}">{{ translate('Add_New_Provider') }}</a>
+                            <li><a href="{{ route('admin.provider.create', ['is_partner' => 0]) }}"
+                                    class="{{ request()->is('admin/provider/create') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">{{ translate('Add_New_Provider') }}</a>
+                            </li>
+                        @endcan
+                    </ul>
+                </li>
+            @endcan
+
+            @canany(['provider_view', 'provider_add', 'onboarding_request_view'])
+                <li class="nav-category" title="{{ translate('Partner Management') }}">
+                    {{ translate('Partner Management') }}
+                </li>
+            @endcanany
+            @can('onboarding_request_view')
+                <li>
+                    <a href="{{ route('admin.provider.onboarding_request', ['status' => 'onboarding', 'is_partner' => 1]) }}"
+                        class="{{ request()->is('admin/provider/onboarding*') && request('is_partner') == 1 ? 'active-menu' : '' }}">
+                        <span class="material-icons" title="{{ translate('Pending Partner Requests') }}">assignment_ind</span>
+                        <span class="link-title">{{ translate('Pending Partner Requests') }} <span
+                                class="count">{{ $pending_partners }}</span></span>
+                    </a>
+                </li>
+            @endcan
+            @canany(['provider_view', 'provider_add'])
+                <li
+                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner') == 1 ? 'sub-menu-opened' : '' }}">
+                    <a href="#"
+                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner') == 1 ? 'active-menu' : '' }}">
+                        <span class="material-icons" title="Partners">handshake</span>
+                        <span class="link-title">{{ translate('Partners') }}</span>
+                    </a>
+                    <ul class="nav sub-menu">
+                        @can('provider_view')
+                            <li>
+                                <a href="{{ route('admin.provider.list', ['status' => 'all', 'is_partner' => 1]) }}"
+                                    class="{{ request()->is('admin/provider/list') && request('is_partner') == 1 ? 'active-menu' : '' }}">{{ translate('Partner_List') }}</a>
+                            </li>
+                        @endcan
+                        @can('provider_add')
+                            <li><a href="{{ route('admin.provider.create', ['is_partner' => 1]) }}"
+                                    class="{{ request()->is('admin/provider/create') && request('is_partner') == 1 ? 'active-menu' : '' }}">{{ translate('Add_New_Partner') }}</a>
                             </li>
                         @endcan
                     </ul>

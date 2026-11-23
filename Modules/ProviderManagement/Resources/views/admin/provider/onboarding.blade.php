@@ -1,12 +1,12 @@
 @extends('adminmodule::layouts.master')
 
-@section('title',translate('Pending_Provider_Requests'))
+@section('title', ($isPartner ?? 0) ? translate('Pending_Partner_Requests') : translate('Pending_Provider_Requests'))
 
 @section('content')
     <div class="main-content">
         <div class="container-fluid">
             <div class="page-title-wrap mb-3">
-                <h2 class="page-title">{{translate('Pending_Provider_Requests')}}</h2>
+                <h2 class="page-title">{{ ($isPartner ?? 0) ? translate('Pending_Partner_Requests') : translate('Pending_Provider_Requests') }}</h2>
             </div>
 
             <div
@@ -14,7 +14,7 @@
                 <ul class="nav nav--tabs">
                     <li class="nav-item">
                         <a class="nav-link active"
-                           href="{{url()->current()}}?status=onboarding">
+                           href="{{url()->current()}}?status=onboarding&is_partner={{$isPartner ?? 0}}">
                             {{translate('Pending_Approvals')}}
                             <sup class="c2-bg py-1 px-2 radius-50 text-white-absolute">{{$providersCount['onboarding']}}</sup>
                         </a>
@@ -30,7 +30,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="data-table-top d-flex flex-wrap gap-10 justify-content-between">
-                        <form action="{{url()->current()}}"
+                        <form action="{{url()->current()}}?is_partner={{$isPartner ?? 0}}"
                               class="search-form search-form_style-two"
                               method="POST">
                             @csrf
@@ -53,7 +53,7 @@
                             <thead>
                             <tr>
                                 <th>{{translate('SL')}}</th>
-                                <th>{{translate('Provider')}}</th>
+                                <th>{{ ($isPartner ?? 0) ? translate('Partner') : translate('Provider') }}</th>
                                 <th>{{translate('Contact_Info')}}</th>
                                 <th>{{translate('Zone')}}</th>
                                 @can('onboarding_request_approve_or_deny')
@@ -62,7 +62,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            @foreach($providers as $key=>$provider)
+                            @forelse($providers as $key=>$provider)
                                 <tr>
                                     <td>{{$providers->firstitem()+$key}}</td>
                                     <td>
@@ -117,7 +117,11 @@
                                         </td>
                                     @endcan
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr class="text-center">
+                                    <td colspan="5">{{ translate('no_data_available') }}</td>
+                                </tr>
+                            @endforelse
                             </tbody>
                         </table>
                     </div>
