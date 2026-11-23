@@ -154,7 +154,11 @@ class CategoryController extends Controller
         $category->position = 1;
         $category->description = null;
         $category->save();
-        $category->zones()->sync($request->zone_ids);
+        $zoneIds = $request->zone_ids;
+        if (in_array('all', $zoneIds)) {
+            $zoneIds = $this->zone->where('is_active', 1)->pluck('id')->toArray();
+        }
+        $category->zones()->sync($zoneIds);
 
         $defaultLanguage = str_replace('_', '-', app()->getLocale());
 
@@ -245,7 +249,11 @@ class CategoryController extends Controller
         $category->description = null;
         $category->save();
 
-        $category->zones()->sync($request->zone_ids);
+        $zoneIds = $request->zone_ids;
+        if (in_array('all', $zoneIds)) {
+            $zoneIds = $this->zone->where('is_active', 1)->pluck('id')->toArray();
+        }
+        $category->zones()->sync($zoneIds);
 
         $defaultLanguage = str_replace('_', '-', app()->getLocale());
 

@@ -81,7 +81,7 @@
                                                     <th>{{ translate('SL') }}</th>
                                                     <th>{{ translate('name') }}</th>
                                                     <th>{{ translate('category') }}</th>
-                                                    <th>{{ translate('zones') }}</th>
+                                                    {{-- <th>{{ translate('zones') }}</th> --}}
 {{-- <th>{{ translate('Price') }}</th> --}}
                                                     @can('service_manage_status')
                                                         <th>{{ translate('status') }}</th>
@@ -113,6 +113,7 @@
                                                                 </div>
                                                             @endif
                                                         </td>
+                                                        {{-- 
                                                         <td>
                                                             @if ($service->category)
                                                                 @if (count($service->category->zonesBasicInfo) > 0)
@@ -125,6 +126,7 @@
                                                                 @endif
                                                             @endif
                                                         </td>
+                                                        --}}
                                                         {{-- 
                                                         <td>
                                                             {{ with_currency_symbol($service->price) }}

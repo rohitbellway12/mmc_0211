@@ -53,25 +53,21 @@ class ServiceController extends Controller
 
         $subscribedServiceIds = $subscribedServices->keys()->toArray();
 
-        // Get all active main categories in the provider's zone
-        $categories = $this->category->ofStatus(1)->ofType('main')
-            ->whereHas('zones', function ($query) use ($provider) {
-                return $query->where('zone_id', $provider->zone_id);
-            })->latest()->get();
+        // Get all active main categories
+        $categories = $this->category->ofStatus(1)->ofType('main')->latest()->get();
 
-        // Query services with zone filtering
+        // Query services without zone restriction
         $services = \Modules\ServiceManagement\Entities\Service::with([
             'category',
             'variations' => function ($query) use ($provider) {
-                $query->where('zone_id', $provider->zone_id);
+                if (!empty($provider->zone_id)) {
+                    $query->where('zone_id', $provider->zone_id);
+                }
             }
         ])
             ->where('is_active', 1)
             ->when($categoryId && $categoryId != 'all', function ($query) use ($categoryId) {
                 $query->where('category_id', $categoryId);
-            })
-            ->whereHas('category.zones', function ($query) use ($provider) {
-                $query->where('zone_id', $provider->zone_id);
             })
             ->whereHas('category', function ($query) {
                 $query->where('is_active', 1);
@@ -106,9 +102,11 @@ class ServiceController extends Controller
         });
 
         // Get provider's custom prices
-        $customPrices = \Modules\ProviderManagement\Entities\ProviderServicePrice::where('provider_id', $provider->id)
-            ->where('zone_id', $provider->zone_id)
-            ->get()
+        $customPricesQuery = \Modules\ProviderManagement\Entities\ProviderServicePrice::where('provider_id', $provider->id);
+        if (!empty($provider->zone_id)) {
+            $customPricesQuery->where('zone_id', $provider->zone_id);
+        }
+        $customPrices = $customPricesQuery->get()
             ->keyBy(function ($item) {
                 return $item->service_id . '_' . $item->variation_id;
             })

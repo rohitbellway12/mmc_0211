@@ -7700,4 +7700,30 @@ _Message' => 'Customer notification for provider bid offer
   'Image Size - maximum size 2 MB Image Ratio -
                                                         1:1' => 'Image Size - maximum size 2 MB Image Ratio -
                                                         1:1',
+  'Image format - jpg, png,
+                                                    jpeg,
+                                                    gif Image
+                                                    Size -
+                                                    maximum size 2 MB Image Ratio - 1:1' => 'Image format - jpg, png,
+                                                    jpeg,
+                                                    gif Image
+                                                    Size -
+                                                    maximum size 2 MB Image Ratio - 1:1',
+  'image_format_-_jpg,_png,_jpeg,_gif_image
+                                                size_-_
+                                                maximum_size_2_MB_Image_Ratio_-_1:1' => 'Image format - jpg, png, jpeg, gif image
+                                                size - 
+                                                maximum size 2 MB Image Ratio - 1:1',
+  'edit_gallery' => 'Edit gallery',
+  'existing_media_items' => 'Existing media items',
+  'you_can_edit_priorities_or_delete_individual_media' => 'You can edit priorities or delete individual media',
+  'delete_item' => 'Delete item',
+  'add_more_media' => 'Add more media',
+  'append_new_images_or_videos_without_affecting_existing_ones.' => 'Append new images or videos without affecting existing ones.',
+  'update_gallery' => 'Update gallery',
+  'new_image' => 'New image',
+  'new_video' => 'New video',
+  'video_url' => 'Video url',
+  'Are you sure you want to delete this media item?' => 'Are you sure you want to delete this media item ',
+  'Failed to delete media item.' => 'Failed to delete media item.',
 );

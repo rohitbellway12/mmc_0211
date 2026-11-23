@@ -5,7 +5,7 @@
                 <th class="title-color">{{ translate('SL') }}</th>
                 <th class="title-color">{{ translate('category_name') }}</th>
                 {{-- <th class="title-color">{{ translate('sub_category_count') }}</th> --}}
-                <th class="title-color">{{ translate('zone_count') }}</th>
+                {{-- <th class="title-color">{{ translate('zone_count') }}</th> --}}
                 @can('category_manage_status')
                     <th class="title-color">{{ translate('status') }}</th>
                 @endcan
@@ -23,14 +23,14 @@
                     <td class="title-color">{{ $categories->firstitem() + $key }}</td>
                     <td class="text-capitalize title-color">{{ $category->name }}</td>
                     {{-- <td class="title-color">{{ $category->children_count }}</td> --}}
-                    <td class="d-flex">
+                    {{-- <td class="d-flex">
                         <div class="title-color">{{ $category->zones_count }}</div>
                         @if ($category->zones_count < 1)
                             <i class="material-icons" data-bs-toggle="tooltip" data-bs-placement="top"
                                 title="{{ translate('This category is not under any zone. Kindly update the category with zone') }}">info
                             </i>
                         @endif
-                    </td>
+                    </td> --}}
                     @can('category_manage_status')
                         <td>
                             <label class="switcher">
@@ -52,12 +52,12 @@
                    @canany(['category_delete', 'category_update'])
                         <td>
                             <div class="d-flex gap-2">
-                                @can('category_update')
+                                {{-- @can('category_update')
                                     <a href="{{ route('admin.category.edit', [$category->id]) }}"
                                         class="action-btn btn--light-primary demo_check" style="--size: 30px">
                                         <span class="material-icons">edit</span>
                                     </a>
-                                @endcan
+                                @endcan --}}
                                 @can('category_delete')
                                     <button type="button" data-id="delete-{{ $category->id }}"
                                         data-message="{{ translate('want_to_delete_this_category') }}?"

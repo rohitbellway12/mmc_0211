@@ -78,9 +78,9 @@
                                                 @endif
 
                                                 <select class="select-zone theme-input-style w-100" name="zone_ids[]" multiple="multiple" id="zone_selector__select" required>
-                                                    <option value="all"  {{ (old('zone_ids') && in_array('all', old('zone_ids'))) ? 'selected' : '' }}>{{translate('Select All')}}</option>
+                                                    <option value="all">{{translate('Select All')}}</option>
                                                     @foreach($zones as $zone)
-                                                        <option value="{{$zone['id']}}" {{ (old('zone_ids') && in_array($zone['id'], old('zone_ids'))) ? 'selected' : '' }}>{{$zone->name}}</option>
+                                                        <option value="{{$zone['id']}}" selected>{{$zone->name}}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
