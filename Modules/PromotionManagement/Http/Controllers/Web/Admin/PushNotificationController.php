@@ -51,7 +51,7 @@ class PushNotificationController extends Controller
             'limit' => 'required|numeric|min:1|max:200',
             'offset' => 'required|numeric|min:1|max:100000',
             'status' => 'required|in:active,inactive,all',
-            'to_user_type' => 'required|in:customer,provider,serviceman,all',
+            'to_user_type' => 'required|in:customer,partner-admin,provider,provider-admin,serviceman,provider-serviceman,all',
         ]);
 
         if ($validator->fails()) {

@@ -603,6 +603,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link {{$toUserType=='partner-admin'?'active':''}}"
+                                   href="{{url()->current()}}?to_user_type=partner-admin">
+                                    {{translate('partner')}}
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link {{$toUserType=='provider-admin'?'active':''}}"
                                    href="{{url()->current()}}?to_user_type=provider-admin">
                                     {{translate('provider')}}

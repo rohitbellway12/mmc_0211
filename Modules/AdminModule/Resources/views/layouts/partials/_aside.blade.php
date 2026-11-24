@@ -334,7 +334,37 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             --}}
 
 
-            @canany(['provider_view', 'provider_add', 'onboarding_request_view', 'withdraw_view', 'withdraw_add'])
+            @php
+                $asideIsPartner = null;
+                if (request()->has('is_partner')) {
+                    $asideIsPartner = (int)request('is_partner');
+                } elseif (isset($isPartner)) {
+                    $asideIsPartner = (int)$isPartner;
+                } elseif (isset($provider) && is_object($provider) && isset($provider->is_partner)) {
+                    $asideIsPartner = (int)$provider->is_partner;
+                } elseif (request()->is('admin/provider/*')) {
+                    $providerRouteId = request()->route('id') ?? request()->route('provider_id');
+                    if (!$providerRouteId) {
+                        $segments = request()->segments();
+                        if (isset($segments[3]) && !in_array($segments[3], ['list', 'create', 'onboarding-request', 'download', 'available-provider', 'provider-info', 'category-questions'])) {
+                            $providerRouteId = $segments[3];
+                        }
+                    }
+                    if ($providerRouteId) {
+                        try {
+                            $asideProvider = \Modules\ProviderManagement\Entities\Provider::select('id', 'is_partner')->find($providerRouteId);
+                            if ($asideProvider) {
+                                $asideIsPartner = (int)$asideProvider->is_partner;
+                            }
+                        } catch (\Throwable $e) {}
+                    }
+                }
+                if (is_null($asideIsPartner)) {
+                    $asideIsPartner = 0;
+                }
+            @endphp
+
+            @canany(['provider_view', 'provider_add', 'onboarding_request_view'])
                 <li class="nav-category" title="{{ translate('provider_management') }}">
                     {{ translate('provider_management') }}
                 </li>
@@ -342,7 +372,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @can('onboarding_request_view')
                 <li>
                     <a href="{{ route('admin.provider.onboarding_request', ['status' => 'onboarding', 'is_partner' => 0]) }}"
-                        class="{{ request()->is('admin/provider/onboarding*') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">
+                        class="{{ request()->is('admin/provider/onboarding*') && $asideIsPartner === 0 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="{{ translate('Pending Provider Requests') }}">how_to_reg</span>
                         <span class="link-title">{{ translate('Pending Provider Requests') }} <span
                                 class="count">{{ $pending_providers }}</span></span>
@@ -351,9 +381,9 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @endcan
             @canany(['provider_view', 'provider_add'])
                 <li
-                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner', 0) == 0 ? 'sub-menu-opened' : '' }}">
+                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 0 ? 'sub-menu-opened' : '' }}">
                     <a href="#"
-                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">
+                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 0 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="Providers">engineering</span>
                         <span class="link-title">{{ translate('providers') }}</span>
                     </a>
@@ -361,12 +391,12 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                         @can('provider_view')
                             <li>
                                 <a href="{{ route('admin.provider.list', ['status' => 'all', 'is_partner' => 0]) }}"
-                                    class="{{ request()->is('admin/provider/list') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">{{ translate('Provider_List') }}</a>
+                                    class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 0 ? 'active-menu' : '' }}">{{ translate('Provider_List') }}</a>
                             </li>
                         @endcan
                         @can('provider_add')
                             <li><a href="{{ route('admin.provider.create', ['is_partner' => 0]) }}"
-                                    class="{{ request()->is('admin/provider/create') && request('is_partner', 0) == 0 ? 'active-menu' : '' }}">{{ translate('Add_New_Provider') }}</a>
+                                    class="{{ request()->is('admin/provider/create') && $asideIsPartner === 0 ? 'active-menu' : '' }}">{{ translate('Add_New_Provider') }}</a>
                             </li>
                         @endcan
                     </ul>
@@ -381,7 +411,7 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @can('onboarding_request_view')
                 <li>
                     <a href="{{ route('admin.provider.onboarding_request', ['status' => 'onboarding', 'is_partner' => 1]) }}"
-                        class="{{ request()->is('admin/provider/onboarding*') && request('is_partner') == 1 ? 'active-menu' : '' }}">
+                        class="{{ request()->is('admin/provider/onboarding*') && $asideIsPartner === 1 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="{{ translate('Pending Partner Requests') }}">assignment_ind</span>
                         <span class="link-title">{{ translate('Pending Partner Requests') }} <span
                                 class="count">{{ $pending_partners }}</span></span>
@@ -390,9 +420,9 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
             @endcan
             @canany(['provider_view', 'provider_add'])
                 <li
-                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner') == 1 ? 'sub-menu-opened' : '' }}">
+                    class="has-sub-item  {{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 1 ? 'sub-menu-opened' : '' }}">
                     <a href="#"
-                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && request('is_partner') == 1 ? 'active-menu' : '' }}">
+                        class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/create') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 1 ? 'active-menu' : '' }}">
                         <span class="material-icons" title="Partners">handshake</span>
                         <span class="link-title">{{ translate('Partners') }}</span>
                     </a>
@@ -400,12 +430,12 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                         @can('provider_view')
                             <li>
                                 <a href="{{ route('admin.provider.list', ['status' => 'all', 'is_partner' => 1]) }}"
-                                    class="{{ request()->is('admin/provider/list') && request('is_partner') == 1 ? 'active-menu' : '' }}">{{ translate('Partner_List') }}</a>
+                                    class="{{ (request()->is('admin/provider/list') || request()->is('admin/provider/details*') || request()->is('admin/provider/edit*') || request()->is('admin/provider/collect-cash*')) && $asideIsPartner === 1 ? 'active-menu' : '' }}">{{ translate('Partner_List') }}</a>
                             </li>
                         @endcan
                         @can('provider_add')
                             <li><a href="{{ route('admin.provider.create', ['is_partner' => 1]) }}"
-                                    class="{{ request()->is('admin/provider/create') && request('is_partner') == 1 ? 'active-menu' : '' }}">{{ translate('Add_New_Partner') }}</a>
+                                    class="{{ request()->is('admin/provider/create') && $asideIsPartner === 1 ? 'active-menu' : '' }}">{{ translate('Add_New_Partner') }}</a>
                             </li>
                         @endcan
                     </ul>
