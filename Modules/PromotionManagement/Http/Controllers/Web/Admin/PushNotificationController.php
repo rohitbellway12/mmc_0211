@@ -156,13 +156,13 @@ class PushNotificationController extends Controller
             'provider-serviceman' => true
         ];
 
-        $rawUsers = !empty($validatedData['to_users']) ? $validatedData['to_users'] : ['customer'];
+        $rawUsers = !empty($validatedData['to_users']) ? $validatedData['to_users'] : ['all'];
         $filteredUsers = array_filter(array_map(function($user) use ($permissionsMap) {
             return ($permissionsMap[$user] ?? false) ? $user : null;
         }, $rawUsers));
 
         if (empty($filteredUsers) || in_array('all', $rawUsers, true)) {
-            $filteredUsers = in_array('all', $rawUsers, true) ? array_keys(array_filter($permissionsMap)) : ['customer'];
+            $filteredUsers = array_keys(array_filter($permissionsMap));
         }
 
         $rawZoneIds = !empty($validatedData['zone_ids']) ? $validatedData['zone_ids'] : ['all'];
@@ -742,7 +742,7 @@ class PushNotificationController extends Controller
         $categoryId = $request->input('category_id');
         $audienceType = $request->input('audience_type', 'all');
         $rawZoneIds = (array) $request->input('zone_ids', []);
-        $toUsers = (array) $request->input('to_users', ['customer']);
+        $toUsers = (array) $request->input('to_users', ['all']);
 
         $hasAllZones = in_array('all', $rawZoneIds, true) || empty($rawZoneIds);
         $zoneIds = $hasAllZones ? [] : $rawZoneIds;

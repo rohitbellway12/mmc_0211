@@ -55,7 +55,7 @@
                                                             name="to_users[]" id="user_selector__select" multiple="multiple">
                                                         <option value="all">{{translate('all')}}</option>
                                                         <option value="customer" {{in_array('customer',$pushNotification->to_users)?'selected':''}}>
-                                                            {{translate('customer (Mobile App)')}}
+                                                            {{translate('customer (App & Web)')}}
                                                         </option>
                                                         <option value="partner-admin" {{in_array('partner-admin',$pushNotification->to_users)?'selected':''}}>
                                                             {{translate('partner (Workshop / Estimators)')}}
@@ -86,7 +86,7 @@
                                                 <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('On-Tap Action (Deep Link)')}}</label>
                                                 <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
                                                     <option value="general" {{ old('on_tap_action', $pushNotification->on_tap_action ?? 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / Dashboard (All Roles)')}}</option>
-                                                    <optgroup label="📱 {{translate('Customer App Actions')}}" id="edit_page_optgroup_customer">
+                                                    <optgroup label="📱 {{translate('Customer Actions (App & Web)')}}" id="edit_page_optgroup_customer">
                                                         <option value="quote_form" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
                                                         <option value="service_page" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
                                                     </optgroup>

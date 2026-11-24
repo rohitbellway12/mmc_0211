@@ -7926,4 +7926,8 @@ _Message' => 'Customer notification for provider bid offer
   'Go to Dashboard' => 'Go to Dashboard',
   'Create Quotation' => 'Create Quotation',
   'View Customers' => 'View Customers',
+  'Customers (App & Web)' => 'Customers (App & Web)',
+  'Customer Actions (App & Web)' => 'Customer Actions (App & Web)',
+  'customer (App & Web)' => 'Customer (App & Web)',
+  'Customer taps notification to open MMC App or Website.' => 'Customer taps notification to open MMC App or Website.',
 );

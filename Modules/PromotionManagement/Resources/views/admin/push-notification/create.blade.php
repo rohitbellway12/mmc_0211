@@ -290,8 +290,8 @@
                                                             </label>
                                                             <div class="position-relative">
                                                                 <select class="select-user theme-input-style w-100" name="to_users[]" id="user_selector__select" multiple="multiple">
-                                                                    <option value="all" {{ collect(old('to_users'))->contains('all') ? 'selected' : '' }}>{{translate('All Users')}}</option>
-                                                                    <option value="customer" {{ collect(old('to_users', ['customer']))->contains('customer') ? 'selected' : '' }}>{{translate('Customers (Mobile App)')}}</option>
+                                                                    <option value="all" {{ collect(old('to_users', ['all']))->contains('all') ? 'selected' : '' }}>{{translate('All Users')}}</option>
+                                                                    <option value="customer" {{ collect(old('to_users'))->contains('customer') ? 'selected' : '' }}>{{translate('Customers (App & Web)')}}</option>
                                                                     <option value="partner-admin" {{ collect(old('to_users'))->contains('partner-admin') ? 'selected' : '' }}>{{translate('Partners (Workshops / Estimators)')}}</option>
                                                                     <option value="provider-admin" {{ collect(old('to_users'))->contains('provider-admin') ? 'selected' : '' }}>{{translate('Providers (Garages / Mechanics)')}}</option>
                                                                     <option value="provider-serviceman" {{ collect(old('to_users'))->contains('provider-serviceman') ? 'selected' : '' }}>{{translate('Servicemen')}}</option>
@@ -369,8 +369,8 @@
                                                             <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
                                                                 <option value="general" {{ old('on_tap_action', 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / Dashboard (All Roles)')}}</option>
                                                                 
-                                                                <optgroup label="📱 {{translate('Customer App Actions')}}" id="optgroup_customer">
-                                                                    <option value="quote_form" {{ old('on_tap_action') == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form (Customer App)')}}</option>
+                                                                <optgroup label="📱 {{translate('Customer Actions (App & Web)')}}" id="optgroup_customer">
+                                                                    <option value="quote_form" {{ old('on_tap_action') == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
                                                                     <option value="service_page" {{ old('on_tap_action') == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
                                                                 </optgroup>
                                                                 
@@ -1018,7 +1018,7 @@
                                     <div class="position-relative">
                                         <select class="select-users position-relative theme-input-style w-100" name="to_users[]" id="edit_to_users" multiple="multiple">
                                             <option value="all">{{translate('all')}}</option>
-                                            <option value="customer">{{translate('customer')}}</option>
+                                            <option value="customer">{{translate('customer (App & Web)')}}</option>
                                             <option value="partner-admin">{{translate('partner')}}</option>
                                             <option value="provider-admin">{{translate('provider')}}</option>
                                             <option value="provider-serviceman">{{translate('serviceman')}}</option>
@@ -1042,7 +1042,7 @@
                                     <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('On-Tap Action')}}</div>
                                     <select class="form-select theme-input-style w-100" name="on_tap_action" id="edit_on_tap_action">
                                         <option value="general">{{translate('Open App Home / Dashboard (All Roles)')}}</option>
-                                        <optgroup label="📱 {{translate('Customer App Actions')}}" id="edit_optgroup_customer">
+                                        <optgroup label="📱 {{translate('Customer Actions (App & Web)')}}" id="edit_optgroup_customer">
                                             <option value="quote_form">{{translate('Open Quote Request Form')}}</option>
                                             <option value="service_page">{{translate('Open Service Details Page')}}</option>
                                         </optgroup>
@@ -1171,7 +1171,7 @@
                 let categoryId = $('#category_selector__select').val();
                 let audienceType = $('input[name="audience_type"]:checked').val() || 'all';
                 let zoneIds = $('#zone_selector__select4').val() || [];
-                let toUsers = $('#user_selector__select').val() || ['customer'];
+                let toUsers = $('#user_selector__select').val() || ['all'];
 
                 $('#reach_calculation_status').text('{{ translate("Updating...") }}');
 
@@ -1311,7 +1311,7 @@
                 } else if (users.length === 1 && users[0] === 'provider-admin') {
                     $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Provider will receive notification linking to Service Requests, Services, or Dashboard.") }}');
                 } else if (users.length === 1 && users[0] === 'customer') {
-                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Customer taps notification to open MMC Mobile App.") }}');
+                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Customer taps notification to open MMC App or Website.") }}');
                 } else {
                     $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Select target screen to open when user clicks notification.") }}');
                 }
@@ -1375,35 +1375,58 @@
                 width: '100%'
             });
 
-            // --- Handle "Select All" in Users ---
+            // --- Handle Selection in Users ---
+            let previousUserValues = $('#user_selector__select').val() || ['all'];
             $('#user_selector__select').on('change', function () {
                 var selectedValues = $(this).val();
-                if (selectedValues && selectedValues.includes('all')) {
-                    // Select everything except "all"
-                    var allOptions = $(this).find('option[value!="all"]').map(function () {
-                        return this.value;
-                    }).get();
-
-                    $(this).val(allOptions).trigger('change'); // update Select2
+                if (!selectedValues || selectedValues.length === 0) {
+                    previousUserValues = ['all'];
+                    $(this).val(['all']).trigger('change');
+                    return;
                 }
+                if (selectedValues.length > 1 && selectedValues.includes('all')) {
+                    if (!previousUserValues.includes('all')) {
+                        previousUserValues = ['all'];
+                        $(this).val(['all']).trigger('change');
+                        return;
+                    } else {
+                        var withoutAll = selectedValues.filter(v => v !== 'all');
+                        previousUserValues = withoutAll;
+                        $(this).val(withoutAll).trigger('change');
+                        return;
+                    }
+                }
+                previousUserValues = selectedValues;
             });
 
-            // --- Handle "Select All" in Zones ---
+            // --- Handle Selection in Zones ---
+            let previousZoneValues = $('#zone_selector__select4').val() || ['all'];
             $('#zone_selector__select4').on('change', function () {
                 var selectedValues = $(this).val();
-                if (selectedValues && selectedValues.includes('all')) {
-                    var allOptions = $(this).find('option[value!="all"]').map(function () {
-                        return this.value;
-                    }).get();
-
-                    $(this).val(allOptions).trigger('change');
+                if (!selectedValues || selectedValues.length === 0) {
+                    previousZoneValues = ['all'];
+                    $(this).val(['all']).trigger('change');
+                    return;
                 }
+                if (selectedValues.length > 1 && selectedValues.includes('all')) {
+                    if (!previousZoneValues.includes('all')) {
+                        previousZoneValues = ['all'];
+                        $(this).val(['all']).trigger('change');
+                        return;
+                    } else {
+                        var withoutAll = selectedValues.filter(v => v !== 'all');
+                        previousZoneValues = withoutAll;
+                        $(this).val(withoutAll).trigger('change');
+                        return;
+                    }
+                }
+                previousZoneValues = selectedValues;
             });
 
             $('form#push_notification_create_form').on('reset', function () {
                 setTimeout(function () {
                     $('#zone_selector__select4').val(['all']).trigger('change');
-                    $('#user_selector__select').val(['customer']).trigger('change');
+                    $('#user_selector__select').val(['all']).trigger('change');
                     $('#category_selector__select').val('').trigger('change');
                     $('#on_tap_action__select').val('general').trigger('change');
                     $('#audience_all').prop('checked', true);
