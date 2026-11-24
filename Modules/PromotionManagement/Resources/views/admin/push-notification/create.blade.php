@@ -3,6 +3,142 @@
 @section('title',translate('Send Notification'))
 
 @push('css_or_js')
+    <style>
+        .phone-mockup-wrap {
+            position: sticky;
+            top: 85px;
+            z-index: 10;
+        }
+        .phone-mockup-frame {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 10px solid #0f172a;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            max-width: 320px;
+            margin: 0 auto;
+            position: relative;
+            min-height: 520px;
+            color: #fff;
+        }
+        .phone-notch {
+            width: 110px;
+            height: 18px;
+            background: #0f172a;
+            border-radius: 0 0 12px 12px;
+            margin: 0 auto;
+        }
+        .phone-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 18px 8px 18px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .phone-lockscreen-time {
+            text-align: center;
+            padding: 15px 10px 10px 10px;
+        }
+        .phone-lockscreen-time .clock-text {
+            font-size: 40px;
+            font-weight: 300;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+        .phone-lockscreen-time .date-text {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 4px;
+        }
+        .phone-notification-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin: 0 10px 12px 10px;
+            color: #0f172a;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease-in-out;
+        }
+        .phone-notif-header {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 6px;
+        }
+        .phone-notif-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .phone-notif-appname {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .phone-notif-time {
+            font-size: 10px;
+            color: #64748b;
+            margin-left: auto;
+        }
+        .phone-notif-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        .phone-notif-body {
+            font-size: 11.5px;
+            color: #334155;
+            line-height: 1.4;
+            word-break: break-word;
+            margin-bottom: 4px;
+        }
+        .phone-notif-image-wrap {
+            margin-top: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 130px;
+            background: #e2e8f0;
+        }
+        .phone-notif-image-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .phone-notif-action-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10.5px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        .phone-bottom-home-bar {
+            width: 90px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 10px;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
     <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/plugins/select2/select2.min.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/plugins/dataTables/jquery.dataTables.min.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/plugins/dataTables/select.dataTables.min.css"/>
@@ -33,178 +169,399 @@
                     </div>
 
                     @can('push_notification_add')
-                        <div class="card mb-30">
-                            <div class="card-body p-20">
-                            <div class="mb-20">
-                                <h3 class="mb-1">{{ translate('Push Notification') }}</h3>
-                                <p class="fz-12 mb-20">{{ translate('From here admin can send notification to the users') }}</p>
+                        <div class="card mb-30 shadow-sm border">
+                            <div class="card-header bg-white border-bottom pt-20 px-25 pb-15 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div>
+                                    <h3 class="mb-1 text-dark d-flex align-items-center gap-2">
+                                        <span class="material-icons text-primary">notifications_active</span>
+                                        {{ translate('Create & Send Push Notification') }}
+                                    </h3>
+                                    <p class="fz-12 text-muted mb-0">{{ translate('Send immediate announcements or schedule targeted service campaigns directly to customer devices.') }}</p>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fz-12 fw-medium d-flex align-items-center gap-1">
+                                        <span class="material-icons fz-15">schedule</span>
+                                        {{ translate('UK Time') }}: {{ \Carbon\Carbon::now()->format('h:i A') }} ({{ date_default_timezone_get() }})
+                                    </span>
+                                </div>
                             </div>
+
+                            <div class="card-body p-20 p-lg-25 bg-light-subtle">
                                 <form action="{{route('admin.push-notification.store')}}" method="POST" enctype="multipart/form-data" id="push_notification_create_form">
                                     @csrf
                                     <input type="hidden" name="user_tz_offset" class="user_tz_offset_input">
-                                    <div class="row g-sm-4 g-3">
-                                        <div class="col-lg-8">
-                                            <div class="bg-light rounded p-20">
-                                                <div class="message-textarea">
-                                                    <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Tittle')}}
-                                                        <i class="material-icons fz-14 text-light-gray" data-bs-toggle="tooltip"
-                                                            data-bs-placement="top"
-                                                            title="{{translate('Write the push notification title')}}"
-                                                        >info</i>
-                                                    </div>
-                                                    <textarea class="form-control block-size-initial" name="title" rows="1" placeholder="Type title" data-maxlength="100" maxlength="100">{{ old('title') }}</textarea>
-                                                    <div class="d-flex justify-content-end mt-1">
-                                                        <span class="text-light-gray letter-count fz-12">0/100</span>
-                                                    </div>
+
+                                    <div class="row g-4">
+                                        {{-- LEFT COLUMN: All Inputs & Configuration --}}
+                                        <div class="col-xl-7 col-lg-7">
+                                            {{-- STEP 1: Notification Message --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                        <span class="material-icons fz-18 text-primary">edit_note</span>
+                                                        1. {{ translate('Notification Message') }}
+                                                    </h4>
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fz-10">{{ translate('Required') }}</span>
                                                 </div>
-                                                <div class="message-textarea">
-                                                    <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Description')}}
-                                                        <i class="material-icons fz-14 text-light-gray" data-bs-toggle="tooltip"
-                                                            data-bs-placement="top"
-                                                            title="{{translate('Write a description about the push notification')}}"
-                                                        >info</i>
-                                                    </div>
-                                                    <textarea class="form-control block-size-initial" name="description" rows="1" placeholder="Type about the description" data-maxlength="200" maxlength="200">{{ old('description') }}</textarea>
-                                                    <div class="d-flex justify-content-end mt-1">
-                                                        <span class="text-light-gray letter-count fz-12">0/200</span>
-                                                    </div>
-                                                </div>
-                                                <div class="row g-sm-4 g-3">
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('zones')}}
-                                                            <i class="material-icons fz-14 text-light-gray" data-bs-toggle="tooltip"
-                                                                data-bs-placement="top"
-                                                                title="{{translate('Select the zones')}}"
-                                                            >info</i>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="mb-3">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-0">
+                                                                {{translate('Notification Title')}} <span class="text-danger">*</span>
+                                                            </label>
+                                                            <span class="text-muted letter-count fz-11 title-count">0/100</span>
                                                         </div>
-                                                        <div class="position-relative collpse-icon">
-                                                            <select class="select-zone theme-input-style w-100" name="zone_ids[]" id="zone_selector__select4" multiple="multiple">
-                                                                 <option value="all" {{ collect(old('zone_ids'))->contains('all') ? 'selected' : '' }}>{{translate('Select All')}}</option>
-                                                                 @foreach($zones as $zone)
-                                                                     <option value="{{$zone->id}}" {{ collect(old('zone_ids'))->contains($zone->id) ? 'selected' : '' }}>{{$zone->name}}</option>
-                                                                 @endforeach
-                                                             </select>
-                                                            <span class="material-symbols-outlined position-absolute end-0 px-2 down-icon" role="button">
-                                                                keyboard_arrow_down
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Targeted user')}}
-                                                            <i class="material-icons fz-14 text-light-gray" data-bs-toggle="tooltip"
-                                                                data-bs-placement="top"
-                                                                title="{{translate('Select the targeted user')}}"
-                                                            >info</i>
-                                                        </div>
-                                                        <div class="position-relative collpse-icon">
-                                                            <select class="select-user theme-input-style w-100" name="to_users[]" id="user_selector__select" multiple="multiple">
-                                                                 <option value="all" {{ collect(old('to_users'))->contains('all') ? 'selected' : '' }}>{{translate('all')}}</option>
-                                                                 <option value="customer" {{ collect(old('to_users'))->contains('customer') ? 'selected' : '' }}>{{translate('customer')}}</option>
-                                                                 <option value="provider-admin" {{ collect(old('to_users'))->contains('provider-admin') ? 'selected' : '' }}>{{translate('provider')}}</option>
-                                                                 <option value="provider-serviceman" {{ collect(old('to_users'))->contains('provider-serviceman') ? 'selected' : '' }}>{{translate('serviceman')}}</option>
-                                                             </select>
-                                                            <span class="material-symbols-outlined position-absolute end-0 px-2 down-icon" role="button">
-                                                                keyboard_arrow_down
-                                                            </span>
-                                                        </div>
+                                                        <input type="text" class="form-control theme-input-style" name="title" id="notif_title_input" placeholder="{{translate('e.g., SMART repair slots available in Bromley')}}" maxlength="100" data-maxlength="100" value="{{ old('title') }}" required>
                                                     </div>
 
-                                                    {{-- Scheduling Options --}}
-                                                    <div class="col-12 mt-3 pt-3 border-top">
-                                                        <div class="mb-2 text-dark d-flex align-items-center gap-2 fw-semibold fz-14">
-                                                            <span class="material-icons fz-18 text-primary">schedule</span>
-                                                            {{translate('Notification Delivery Timing')}}
+                                                    <div class="mb-0">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-0">
+                                                                {{translate('Message / Description')}} <span class="text-danger">*</span>
+                                                            </label>
+                                                            <span class="text-muted letter-count fz-11 desc-count">0/200</span>
                                                         </div>
-                                                        <div class="d-flex flex-wrap gap-4 align-items-center my-2 p-3 bg-white rounded border">
-                                                            <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
-                                                                <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_immediate" value="immediate" {{ old('send_type', 'immediate') == 'immediate' ? 'checked' : '' }}>
-                                                                <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_immediate">
-                                                                    <strong>{{translate('Send Immediately')}}</strong>
-                                                                </label>
-                                                            </div>
-                                                            <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
-                                                                <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_scheduled" value="scheduled" {{ old('send_type') == 'scheduled' ? 'checked' : '' }}>
-                                                                <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_scheduled">
-                                                                    <strong>{{translate('Schedule for Later')}}</strong>
-                                                                </label>
-                                                            </div>
+                                                        <textarea class="form-control theme-input-style" name="description" id="notif_desc_input" rows="3" placeholder="{{translate('e.g., Got a bumper scuff or scratch? Tap to upload photos and request an instant quote.')}}" maxlength="200" data-maxlength="200" required>{{ old('description') }}</textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- STEP 2: Banner Image (Optional) --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                        <span class="material-icons fz-18 text-primary">image</span>
+                                                        2. {{ translate('Banner Image') }}
+                                                    </h4>
+                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Optional') }}</span>
+                                                </div>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div class="custom-upload-wrapper upload-group image-upload-wrap1 m-0">
+                                                            <input type="file" id="imageUpload" accept="image/*" name="cover_image">
+                                                            <label for="imageUpload" class="upload-box rounded position-relative d-flex align-items-center justify-content-center text-center overflow-hidden bg-light border cursor-pointer m-0" style="width: 120px; height: 80px;">
+                                                                <div class="upload-content">
+                                                                    <span class="material-symbols-outlined placeholder-icon text-primary fz-24">
+                                                                        photo_camera
+                                                                    </span>
+                                                                    <div class="fz-10 text-dark mt-1">{{ translate('Upload') }}</div>
+                                                                </div>
+                                                                <img class="image-preview" src="" alt="Preview" style="display:none;" />
+                                                            </label>
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <p class="fz-12 text-dark fw-medium mb-1">{{ translate('Attach banner image (Optional)') }}</p>
+                                                            <p class="fz-11 text-muted mb-0">{{ translate('JPG, PNG up to 2MB (2:1 ratio). Leave empty for clean standard text push.') }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- STEP 3: Service Campaign & Deep Link Action --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                            <span class="material-icons fz-18 text-primary">touch_app</span>
+                                                            3. {{ translate('Service Campaign & Action (Deep Link)') }}
+                                                        </h4>
+                                                    </div>
+                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Optional') }}</span>
+                                                </div>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
+                                                                {{translate('Service Category')}}
+                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Optional') }}</span>
+                                                            </label>
+                                                            <select class="form-select theme-input-style w-100" name="category_id" id="category_selector__select">
+                                                                <option value="">-- {{translate('No Service (General Broadcast)')}} --</option>
+                                                                @foreach($categories as $cat)
+                                                                    <option value="{{$cat->id}}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{$cat->name}}</option>
+                                                                @endforeach
+                                                            </select>
+                                                            <div class="fz-11 text-muted mt-1">{{ translate('e.g. SMART Repair, Alloy Refurbishment, Car Hire') }}</div>
                                                         </div>
 
-                                                        {{-- Scheduled Options Box --}}
-                                                        <div id="scheduled_delivery_options" class="mt-3 p-3 bg-white rounded border {{ old('send_type') == 'scheduled' ? '' : 'd-none' }}">
-                                                            <div class="row g-3">
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Frequency / Repeat')}}</label>
-                                                                    <select class="form-select select-repeat-type theme-input-style" name="repeat_type" id="repeat_type">
-                                                                        <option value="once" {{ old('repeat_type', 'once') == 'once' ? 'selected' : '' }}>{{translate('One-Time (Specific Date & Time)')}}</option>
-                                                                        <option value="daily" {{ old('repeat_type') == 'daily' ? 'selected' : '' }}>{{translate('Daily Repeating (Every Day at Time)')}}</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-md-8" id="scheduled_at_wrapper">
-                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                        <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Date & Time Slot(s)')}} <span class="text-danger">*</span></label>
-                                                                        <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_datetime_btn">
-                                                                            <span class="material-icons fz-14">add</span> {{translate('Add More Date')}}
-                                                                        </button>
-                                                                    </div>
-                                                                    <div id="scheduled_datetime_container" class="d-flex flex-column gap-2">
-                                                                        <div class="d-flex align-items-center gap-2 datetime-slot-row">
-                                                                            <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}" value="{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}">
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="fz-11 text-muted mt-1">{{translate('You can add multiple dates and times. Click "+ Add More Date" to schedule more.')}}</div>
-                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }})</div>
-                                                                </div>
-                                                                <div class="col-md-8 d-none" id="scheduled_time_wrapper">
-                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                        <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Daily Send Time Slot(s)')}} <span class="text-danger">*</span></label>
-                                                                        <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_time_btn">
-                                                                            <span class="material-icons fz-14">add</span> {{translate('Add More Time')}}
-                                                                        </button>
-                                                                    </div>
-                                                                    <div id="scheduled_time_container" class="d-flex flex-column gap-2">
-                                                                        <div class="d-flex align-items-center gap-2 time-slot-row">
-                                                                            <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}">
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="fz-11 text-muted mt-1">{{translate('Notification will automatically fire every day at each configured time slot.')}}</div>
-                                                                    <div class="fz-11 text-primary mt-1 fw-semibold"><span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }})</div>
-                                                                </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
+                                                                {{translate('On-Tap Action (Screen to Open)')}}
+                                                            </label>
+                                                            <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
+                                                                <option value="general" {{ old('on_tap_action', 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / General')}}</option>
+                                                                <option value="quote_form" {{ old('on_tap_action') == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
+                                                                <option value="service_page" {{ old('on_tap_action') == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
+                                                            </select>
+                                                            <div class="fz-11 text-primary mt-1 fw-medium" id="on_tap_action_hint">
+                                                                <span class="material-icons fz-12 align-middle">info</span> {{ translate('Customer taps notification to open MMC App.') }}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="col-lg-4">
-                                            <div class="d-flex align-items-center justify-content-center bg-light rounded p-20 h-100">
-                                                <div class="boxe py-sm-4 py-2">
-                                                    <div class="mb-4 text-center">
-                                                        <p class="text-dark fz-14 fw-semibold mb-0">{{translate('Image')}}</p>
-                                                        <p class="fz-12">{{ translate('Upload your cover Image') }}</p>
-                                                    </div>
-                                                    <div class="custom-upload-wrapper upload-group image-upload-wrap1 mb-20">
-                                                        <input type="file" id="imageUpload" accept="image/*" name="cover_image">
-                                                        <label for="imageUpload" class="upload-box rounded position-relative d-flex align-items-center justify-content-center text-center overflow-hidden bg-white">
-                                                            <div class="upload-content">
-                                                                <span class="material-symbols-outlined placeholder-icon mb-2 text-primary">
-                                                                    photo_camera
+
+                                            {{-- STEP 4: Audience & Area --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                        <span class="material-icons fz-18 text-primary">groups</span>
+                                                        4. {{ translate('Audience & Location') }}
+                                                    </h4>
+                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Optional Defaults') }}</span>
+                                                </div>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">
+                                                                {{translate('Area / Zones')}}
+                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Defaults to All UK') }}</span>
+                                                            </label>
+                                                            <div class="position-relative">
+                                                                <select class="select-zone theme-input-style w-100" name="zone_ids[]" id="zone_selector__select4" multiple="multiple">
+                                                                    <option value="all" {{ collect(old('zone_ids', ['all']))->contains('all') ? 'selected' : '' }}>{{translate('Select All Zones (UK)')}}</option>
+                                                                    @foreach($zones as $zone)
+                                                                        <option value="{{$zone->id}}" {{ collect(old('zone_ids'))->contains($zone->id) ? 'selected' : '' }}>{{$zone->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">
+                                                                {{translate('Target User Group')}}
+                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Defaults to Customer') }}</span>
+                                                            </label>
+                                                            <div class="position-relative">
+                                                                <select class="select-user theme-input-style w-100" name="to_users[]" id="user_selector__select" multiple="multiple">
+                                                                    <option value="all" {{ collect(old('to_users'))->contains('all') ? 'selected' : '' }}>{{translate('All Users')}}</option>
+                                                                    <option value="customer" {{ collect(old('to_users', ['customer']))->contains('customer') ? 'selected' : '' }}>{{translate('Customers')}}</option>
+                                                                    <option value="provider-admin" {{ collect(old('to_users'))->contains('provider-admin') ? 'selected' : '' }}>{{translate('Providers')}}</option>
+                                                                    <option value="provider-serviceman" {{ collect(old('to_users'))->contains('provider-serviceman') ? 'selected' : '' }}>{{translate('Servicemen')}}</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Audience Targeting Filter (Shown only when a Service Category is chosen) --}}
+                                                        <div class="col-12" id="audience_targeting_filter_wrapper" style="display: none;">
+                                                            <div class="p-3 bg-light rounded border">
+                                                                <label class="form-label text-dark fz-12 fw-semibold mb-2 d-flex align-items-center gap-1">
+                                                                    <span class="material-icons fz-16 text-primary">filter_alt</span>
+                                                                    {{translate('Service Campaign Audience')}}
+                                                                </label>
+                                                                <div class="d-flex flex-column gap-2">
+                                                                    <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                                        <input class="form-check-input audience-type-radio" type="radio" name="audience_type" id="audience_all" value="all" {{ old('audience_type', 'all') == 'all' ? 'checked' : '' }}>
+                                                                        <label class="form-check-label cursor-pointer text-dark fz-12" for="audience_all">
+                                                                            <strong>{{translate('All Customers in Selected Area')}}</strong>
+                                                                            <span class="text-muted fz-11 d-block">{{translate('Send this service announcement to everyone in the area')}}</span>
+                                                                        </label>
+                                                                    </div>
+                                                                    <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer border-top pt-2">
+                                                                        <input class="form-check-input audience-type-radio" type="radio" name="audience_type" id="audience_targeted" value="targeted" {{ old('audience_type') == 'targeted' ? 'checked' : '' }}>
+                                                                        <label class="form-check-label cursor-pointer text-dark fz-12" for="audience_targeted">
+                                                                            <strong>{{translate('Targeted Customers Only')}}</strong>
+                                                                            <span class="text-muted fz-11 d-block" id="targeted_service_label_text">{{translate('Only customers who previously booked or requested quotes for this service')}}</span>
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Live Reach Status --}}
+                                                        <div class="col-12">
+                                                            <div class="p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <span class="text-muted fz-11 fw-semibold text-uppercase d-block">{{translate('Ready to Deliver')}}</span>
+                                                                    <div class="d-flex align-items-baseline gap-2 mt-1">
+                                                                        <h3 class="mb-0 text-primary fw-bold fz-22" id="estimated_reach_display">--</h3>
+                                                                        <span class="text-dark fz-13 fw-medium">{{translate('recipients will receive this push')}}</span>
+                                                                    </div>
+                                                                    <div class="fz-11 text-muted" id="reach_breakdown_display">
+                                                                        {{translate('Calculating live reach...')}}
+                                                                    </div>
+                                                                </div>
+                                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fz-11 d-flex align-items-center gap-1" id="reach_calculation_status">
+                                                                    <span class="material-icons fz-14">check_circle</span>
+                                                                    {{translate('Active Target')}}
                                                                 </span>
-                                                                <h6 class="fz-10">Add image</h6>
+                                                                <input type="hidden" name="estimated_reach" id="estimated_reach_input" value="0">
                                                             </div>
-                                                            <img class="image-preview" src="" alt="Preview" />
-                                                        </label>
+                                                        </div>
                                                     </div>
-                                                    <p class="opacity-75 fz-12 text-center">{{translate('JPG, JPEG, PNG,Gif Image size : Max 2 MB (2:1)')}}</p>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex justify-content-end gap-20">
-                                                <button class="btn btn--secondary rounded" type="reset">{{translate('reset')}}</button>
+
+                                            {{-- STEP 5: Delivery Timing --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                        <span class="material-icons fz-18 text-primary">schedule</span>
+                                                        5. {{ translate('Delivery Timing') }}
+                                                    </h4>
+                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Defaults to Immediate') }}</span>
+                                                </div>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="d-flex flex-wrap gap-4 align-items-center p-3 bg-light rounded border mb-3">
+                                                        <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                            <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_immediate" value="immediate" {{ old('send_type', 'immediate') == 'immediate' ? 'checked' : '' }}>
+                                                            <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_immediate">
+                                                                <strong>⚡ {{translate('Send Immediately')}}</strong>
+                                                                <span class="text-muted fz-11 d-block">{{translate('Broadcast directly right now upon saving')}}</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer border-start ps-4">
+                                                            <input class="form-check-input send-type-radio" type="radio" name="send_type" id="send_type_scheduled" value="scheduled" {{ old('send_type') == 'scheduled' ? 'checked' : '' }}>
+                                                            <label class="form-check-label cursor-pointer text-dark fz-13" for="send_type_scheduled">
+                                                                <strong>⏰ {{translate('Schedule for Later')}}</strong>
+                                                                <span class="text-muted fz-11 d-block">{{translate('Automated delivery at a future date and UK time')}}</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Expandable Scheduling Options --}}
+                                                    <div id="scheduled_delivery_options" class="p-3 bg-white rounded border {{ old('send_type') == 'scheduled' ? '' : 'd-none' }}">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-4">
+                                                                <label class="form-label text-dark fz-13 fw-semibold mb-1">{{translate('Frequency / Repeat')}}</label>
+                                                                <select class="form-select select-repeat-type theme-input-style" name="repeat_type" id="repeat_type">
+                                                                    <option value="once" {{ old('repeat_type', 'once') == 'once' ? 'selected' : '' }}>{{translate('One-Time (Specific Date & Time)')}}</option>
+                                                                    <option value="daily" {{ old('repeat_type') == 'daily' ? 'selected' : '' }}>{{translate('Daily Repeating (Every Day at Time)')}}</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-8" id="scheduled_at_wrapper">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Date & Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                                    <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_datetime_btn">
+                                                                        <span class="material-icons fz-14">add</span> {{translate('Add More Date')}}
+                                                                    </button>
+                                                                </div>
+                                                                <div id="scheduled_datetime_container" class="d-flex flex-column gap-2">
+                                                                    <div class="d-flex align-items-center gap-2 datetime-slot-row">
+                                                                        <input type="datetime-local" class="form-control theme-input-style" name="scheduled_at[]" min="{{ \Carbon\Carbon::now()->format('Y-m-d\TH:i') }}" value="{{ \Carbon\Carbon::now()->addMinutes(15)->format('Y-m-d\TH:i') }}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="fz-11 text-primary mt-2 fw-semibold">
+                                                                    <span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('d M Y, h:i A') }})
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-8 d-none" id="scheduled_time_wrapper">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <label class="form-label text-dark fz-13 fw-semibold mb-0">{{translate('Daily Send Time Slot(s)')}} <span class="text-danger">*</span></label>
+                                                                    <button type="button" class="btn btn-sm btn-outline--primary py-0 px-2 fz-12 d-flex align-items-center gap-1" id="add_more_time_btn">
+                                                                        <span class="material-icons fz-14">add</span> {{translate('Add More Time')}}
+                                                                    </button>
+                                                                </div>
+                                                                <div id="scheduled_time_container" class="d-flex flex-column gap-2">
+                                                                    <div class="d-flex align-items-center gap-2 time-slot-row">
+                                                                        <input type="time" class="form-control theme-input-style" name="scheduled_time[]" value="{{ \Carbon\Carbon::now()->addHour()->minute(0)->format('H:i') }}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="fz-11 text-primary mt-2 fw-semibold">
+                                                                    <span class="material-icons fz-12 align-middle">schedule</span> {{translate('Company Timezone')}}: {{ date_default_timezone_get() }} ({{translate('Current Time')}}: {{ \Carbon\Carbon::now()->format('h:i A') }})
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- FORM SUBMIT & RESET BUTTONS --}}
+                                            <div class="d-flex justify-content-end gap-3 pt-2 mb-4 mb-lg-0">
+                                                <button class="btn btn--secondary rounded px-4" type="reset" id="reset_notification_form_btn">{{translate('Reset Form')}}</button>
                                                 @can('push_notification_add')
-                                                    <button class="btn btn--primary rounded demo_check" type="submit">{{translate('Save & Send')}}</button>
+                                                    <button class="btn btn--primary rounded px-4 d-flex align-items-center gap-2" type="submit" id="submit_notification_btn">
+                                                        <span class="material-icons fz-18">send</span>
+                                                        {{translate('Save & Send Notification')}}
+                                                    </button>
                                                 @endcan
+                                            </div>
+                                        </div>
+
+                                        {{-- RIGHT COLUMN: 📱 Real-time Mobile Phone Notification Preview --}}
+                                        <div class="col-xl-5 col-lg-5">
+                                            <div class="phone-mockup-wrap">
+                                                <div class="d-flex align-items-center justify-content-between mb-3 px-2">
+                                                    <h4 class="text-dark fz-15 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                        <span class="material-icons fz-18 text-primary">smartphone</span>
+                                                        {{ translate('Mobile Device Preview') }}
+                                                    </h4>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle fz-11 d-flex align-items-center gap-1">
+                                                        <span class="material-icons fz-12">visibility</span>
+                                                        {{ translate('Live Customer View') }}
+                                                    </span>
+                                                </div>
+
+                                                {{-- SMARTPHONE DEVICE FRAME --}}
+                                                <div class="phone-mockup-frame">
+                                                    {{-- Phone Notch / Speaker --}}
+                                                    <div class="phone-notch"></div>
+
+                                                    {{-- Phone Status Bar --}}
+                                                    <div class="phone-status-bar">
+                                                        <span id="phone_mockup_clock">{{ \Carbon\Carbon::now()->format('h:i') }}</span>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="material-icons fz-12">wifi</span>
+                                                            <span class="material-icons fz-12">signal_cellular_alt</span>
+                                                            <span class="material-icons fz-14">battery_full</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Lockscreen Clock Widget --}}
+                                                    <div class="phone-lockscreen-time">
+                                                        <div class="clock-text" id="phone_lockscreen_time_display">{{ \Carbon\Carbon::now()->format('h:i') }}</div>
+                                                        <div class="date-text">{{ \Carbon\Carbon::now()->format('l, d F') }}</div>
+                                                    </div>
+
+                                                    {{-- PUSH NOTIFICATION BANNER CARD --}}
+                                                    <div class="phone-notification-card">
+                                                        {{-- App Info Header --}}
+                                                        <div class="phone-notif-header">
+                                                            <img src="{{ asset('public/assets/admin-module/img/mobile-logo.png') }}" alt="MMC" class="phone-notif-icon" onerror="this.src='{{ asset('public/assets/admin-module/img/logo.png') }}'">
+                                                            <span class="phone-notif-appname">MMC</span>
+                                                            <span class="phone-notif-time">{{ translate('now') }}</span>
+                                                        </div>
+
+                                                        {{-- Live Notification Title --}}
+                                                        <div class="phone-notif-title" id="preview_notif_title">
+                                                            {{ translate('Notification Title') }}
+                                                        </div>
+
+                                                        {{-- Live Notification Description --}}
+                                                        <div class="phone-notif-body" id="preview_notif_body">
+                                                            {{ translate('Your push notification description will appear here on the customer mobile screen.') }}
+                                                        </div>
+
+                                                        {{-- Live Image Banner (if uploaded) --}}
+                                                        <div class="phone-notif-image-wrap d-none" id="phone_notif_image_container">
+                                                            <img src="" id="preview_notif_img" alt="Push Banner">
+                                                        </div>
+
+                                                        {{-- On-Tap Action Pill --}}
+                                                        <div class="phone-notif-action-tag" id="preview_notif_action_pill">
+                                                            <span class="material-icons fz-12">touch_app</span>
+                                                            <span id="preview_notif_action_text">{{ translate('Tap to open MMC App') }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Bottom Hint --}}
+                                                    <div class="text-center mt-3" style="opacity: 0.6; font-size: 10px;">
+                                                        <span class="material-icons fz-12 align-middle">keyboard_arrow_up</span>
+                                                        {{ translate('Swipe up to unlock') }}
+                                                    </div>
+
+                                                    {{-- Phone Home Indicator Bar --}}
+                                                    <div class="phone-bottom-home-bar"></div>
+                                                </div>
+
+                                                {{-- Live Delivery Summary Card below phone --}}
+                                                <div class="p-3 bg-white rounded border mt-3 text-center shadow-sm">
+                                                    <div class="fz-12 text-muted mb-1">{{ translate('Delivery Target Summary') }}</div>
+                                                    <div class="fw-bold fz-14 text-dark d-flex align-items-center justify-content-center gap-1">
+                                                        <span class="material-icons fz-16 text-success">verified</span>
+                                                        <span id="preview_summary_reach_text">{{ translate('Reaching eligible users in area') }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -289,7 +646,9 @@
                                                     <th class="text-dark fw-medium bg-light">{{translate('description')}}</th>
                                                     <th class="text-dark fw-medium bg-light">{{translate('send_to')}}</th>
                                                     <th class="text-dark fw-medium bg-light">{{translate('zones')}}</th>
+                                                    <th class="text-dark fw-medium bg-light">{{translate('Service & Action')}}</th>
                                                     <th class="text-dark fw-medium bg-light">{{translate('Delivery / Timing')}}</th>
+                                                    <th class="text-dark fw-medium bg-light">{{translate('Outcome (Sent / Taps)')}}</th>
                                                     @can('push_notification_manage_status')
                                                         <th class="text-dark fw-medium bg-light">{{translate('status')}}</th>
                                                     @endcan
@@ -330,6 +689,19 @@
                                                         </div>
                                                     </td>
                                                     <td>
+                                                        @if($item->category)
+                                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                                                                {{$item->category->name}}
+                                                            </span>
+                                                        @else
+                                                            <span class="text-muted fz-12">{{translate('General')}}</span>
+                                                        @endif
+                                                        <div class="fz-11 text-muted mt-1 text-capitalize">
+                                                            <span class="material-icons fz-12 align-middle text-primary">touch_app</span>
+                                                            {{ str_replace('_', ' ', $item->on_tap_action ?? 'general') }}
+                                                        </div>
+                                                    </td>
+                                                    <td>
                                                         @if(($item->send_type ?? 'immediate') == 'immediate')
                                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                                                                 <span class="material-icons fz-12 align-middle">done_all</span> {{translate('Immediate')}}
@@ -351,6 +723,17 @@
                                                                 <div class="fz-11 text-muted mt-1">{{ $item->scheduled_at ? $item->scheduled_at->format('d M Y, h:i A') : '' }}</div>
                                                             @endif
                                                         @endif
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex flex-column gap-1 min-w-100">
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 text-start" title="{{translate('Successfully submitted pushes')}}">
+                                                                <span class="material-icons fz-12 align-middle">send</span> {{ $item->sent_count ?? 0 }} {{translate('Sent')}}
+                                                            </span>
+                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 text-start" title="{{translate('Clicks / taps recorded from customer app')}}">
+                                                                <span class="material-icons fz-12 align-middle">ads_click</span> {{ $item->click_count ?? 0 }} {{translate('Taps')}}
+                                                            </span>
+                                                            <span class="fz-11 text-muted">{{translate('Est. Reach')}}: {{ $item->estimated_reach ?? 0 }}</span>
+                                                        </div>
                                                     </td>
                                                     @can('push_notification_manage_status')
                                                         <td>
@@ -375,6 +758,11 @@
                                                                             data-image="{{ $item->cover_image_full_path }}"
                                                                             data-zone_ids='@json($item->zone_ids)'
                                                                             data-to_users='@json($item->to_users)'
+                                                                            data-category="{{ $item->category ? $item->category->name : translate('General Notification') }}"
+                                                                            data-action_type="{{ str_replace('_', ' ', $item->on_tap_action ?? 'general') }}"
+                                                                            data-reach="{{ $item->estimated_reach ?? 0 }}"
+                                                                            data-sent="{{ $item->sent_count ?? 0 }}"
+                                                                            data-clicks="{{ $item->click_count ?? 0 }}"
                                                                             data-resend="{{ route('admin.push-notification.resend', [$item->id]) }}">
                                                                     <span class="material-symbols-outlined">visibility</span>
                                                                     </button>
@@ -393,6 +781,10 @@
                                                                             data-repeat_type="{{ $item->repeat_type ?? 'once' }}"
                                                                             data-scheduled_at="{{ $item->scheduled_at ? $item->scheduled_at->format('Y-m-d\TH:i') : '' }}"
                                                                             data-scheduled_time="{{ $item->scheduled_time ?? '' }}"
+                                                                            data-category_id="{{ $item->category_id ?? '' }}"
+                                                                            data-on_tap_action="{{ $item->on_tap_action ?? 'general' }}"
+                                                                            data-audience_type="{{ $item->audience_type ?? 'all' }}"
+                                                                            data-estimated_reach="{{ $item->estimated_reach ?? 0 }}"
                                                                             data-action="{{ route('admin.push-notification.update', [$item->id]) }}"
                                                                             data-resend="{{ route('admin.push-notification.resend', [$item->id]) }}">
                                                                     <span class="material-icons">edit</span>
@@ -464,6 +856,38 @@
                                         <div class="col-lg-6">
                                             <h3 class="mb-2 fz-14 fw-medium">{{ translate('Targeted user') }}</h3>
                                             <p class="fz-12 notif-users">—</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-light rounded p-10 mb-15 mt-3">
+                                <div class="bg-white cus-shadow p-12 rounded">
+                                    <div class="row g-lg-4 g-3">
+                                        <div class="col-lg-6 border-end">
+                                            <h3 class="mb-2 fz-14 fw-medium">{{ translate('Service Category') }}</h3>
+                                            <p class="fz-12 notif-category">—</p>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <h3 class="mb-2 fz-14 fw-medium">{{ translate('On-Tap Action') }}</h3>
+                                            <p class="fz-12 notif-action text-capitalize">—</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-light rounded p-10 mt-3">
+                                <div class="bg-white cus-shadow p-12 rounded">
+                                    <div class="row g-lg-4 g-3">
+                                        <div class="col-lg-4 border-end">
+                                            <h3 class="mb-2 fz-14 fw-medium">{{ translate('Estimated Reach') }}</h3>
+                                            <p class="fz-14 notif-reach text-primary fw-bold">—</p>
+                                        </div>
+                                        <div class="col-lg-4 border-end">
+                                            <h3 class="mb-2 fz-14 fw-medium">{{ translate('Sent Pushes') }}</h3>
+                                            <p class="fz-14 notif-sent text-success fw-bold">—</p>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <h3 class="mb-2 fz-14 fw-medium">{{ translate('Taps Recorded') }}</h3>
+                                            <p class="fz-14 notif-taps text-info fw-bold">—</p>
                                         </div>
                                     </div>
                                 </div>
@@ -567,7 +991,7 @@
                                 </div>
 
                                 <!-- Targeted Users Selector -->
-                                <div class="">
+                                <div class="mb-20">
                                     <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Targeted user')}}
                                         <i class="material-icons fz-14 text-light-gray" data-bs-toggle="tooltip"
                                            data-bs-placement="top"
@@ -581,6 +1005,42 @@
                                             <option value="provider-admin">{{translate('provider')}}</option>
                                             <option value="provider-serviceman">{{translate('serviceman')}}</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                <!-- Service Category Selector -->
+                                <div class="mb-20">
+                                    <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Service Category')}}</div>
+                                    <select class="form-select theme-input-style w-100" name="category_id" id="edit_category_id">
+                                        <option value="">-- {{translate('General Notification')}} --</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{$cat->id}}">{{$cat->name}}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <!-- On-Tap Action Selector -->
+                                <div class="mb-20">
+                                    <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('On-Tap Action')}}</div>
+                                    <select class="form-select theme-input-style w-100" name="on_tap_action" id="edit_on_tap_action">
+                                        <option value="general">{{translate('Open App Home / General')}}</option>
+                                        <option value="quote_form">{{translate('Open Quote Request Form')}}</option>
+                                        <option value="service_page">{{translate('Open Service Details Page')}}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Audience Type Filter -->
+                                <div class="mb-20">
+                                    <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('Target Audience')}}</div>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="audience_type" id="edit_audience_all" value="all">
+                                            <label class="form-check-label fz-12" for="edit_audience_all">{{translate('All Users')}}</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="audience_type" id="edit_audience_targeted" value="targeted">
+                                            <label class="form-check-label fz-12" for="edit_audience_targeted">{{translate('Targeted Customers')}}</label>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -674,6 +1134,94 @@
 
         $(document).ready(function () {
             $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
+
+            // Dynamic Reach Calculation Function
+            function calculateEstimatedReach() {
+                let categoryId = $('#category_selector__select').val();
+                let audienceType = $('input[name="audience_type"]:checked').val() || 'all';
+                let zoneIds = $('#zone_selector__select4').val() || [];
+                let toUsers = $('#user_selector__select').val() || ['customer'];
+
+                $('#reach_calculation_status').text('{{ translate("Updating...") }}');
+
+                $.ajax({
+                    url: '{{ route("admin.push-notification.estimate-reach") }}',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        category_id: categoryId,
+                        audience_type: audienceType,
+                        zone_ids: zoneIds,
+                        to_users: toUsers
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            $('#estimated_reach_display').text(res.estimated_reach);
+                            $('#estimated_reach_input').val(res.estimated_reach);
+                            let breakdown = `${res.customer_count} Customers`;
+                            if (res.provider_count > 0) breakdown += `, ${res.provider_count} Providers`;
+                            if (res.serviceman_count > 0) breakdown += `, ${res.serviceman_count} Servicemen`;
+                            $('#reach_breakdown_display').text(breakdown);
+                            $('#reach_calculation_status').text('{{ translate("Active Target") }}');
+                            $('#preview_summary_reach_text').text(`Reaching ~${res.estimated_reach} recipients (${res.customer_count} Customers)`);
+                        }
+                    },
+                    error: function () {
+                        $('#reach_calculation_status').text('{{ translate("Ready") }}');
+                    }
+                });
+            }
+
+            // --- Live Mobile Phone Preview Bindings ---
+            $('#notif_title_input').on('input', function() {
+                let val = $(this).val();
+                $('#preview_notif_title').text(val && val.trim() !== '' ? val : '{{ translate("Notification Title") }}');
+            });
+
+            $('#notif_desc_input').on('input', function() {
+                let val = $(this).val();
+                $('#preview_notif_body').text(val && val.trim() !== '' ? val : '{{ translate("Your push notification description will appear here on the customer mobile screen.") }}');
+            });
+
+            $('#imageUpload').on('change', function() {
+                if (this.files && this.files[0]) {
+                    let reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview_notif_img').attr('src', e.target.result);
+                        $('#phone_notif_image_container').removeClass('d-none');
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    $('#phone_notif_image_container').addClass('d-none');
+                    $('#preview_notif_img').attr('src', '');
+                }
+            });
+
+            function updatePreviewActionTag() {
+                let catText = $('#category_selector__select option:selected').text();
+                let catVal = $('#category_selector__select').val();
+                let actionVal = $('#on_tap_action__select').val();
+
+                let tagText = '{{ translate("Tap to open MMC App") }}';
+                if (actionVal === 'quote_form') {
+                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Quote Form") }}' : '{{ translate("Tap opens Quote Form") }}';
+                } else if (actionVal === 'service_page') {
+                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Details") }}' : '{{ translate("Tap opens Service Page") }}';
+                } else if (actionVal === 'offer_page') {
+                    tagText = '{{ translate("Tap opens Offers & Deals") }}';
+                }
+                $('#preview_notif_action_text').text(tagText);
+            }
+
+            $('#category_selector__select, #on_tap_action__select').on('change', updatePreviewActionTag);
+            updatePreviewActionTag();
+
+            $(document).on('change', '#category_selector__select, input[name="audience_type"], #zone_selector__select4, #user_selector__select', function () {
+                calculateEstimatedReach();
+            });
+
+            // Initial reach calculation on page load
+            setTimeout(calculateEstimatedReach, 500);
             // Initialize Select2 with placeholders
             $('.js-select').select2({
                 placeholder: "{{ translate('select_items') }}",
@@ -754,6 +1302,11 @@
 
             modal.find('.modal-body .notif-zones').text(zoneText);
             modal.find('.modal-body .notif-users').text(userText);
+            modal.find('.modal-body .notif-category').text(button.data('category') || '—');
+            modal.find('.modal-body .notif-action').text(button.data('action_type') || '—');
+            modal.find('.modal-body .notif-reach').text(button.data('reach') || '0');
+            modal.find('.modal-body .notif-sent').text(button.data('sent') || '0');
+            modal.find('.modal-body .notif-taps').text(button.data('clicks') || '0');
         });
 
         $(document).on('click', '.edit-notification-btn', function () {
@@ -780,6 +1333,14 @@
 
             $('#edit_zone_ids').val(zoneIds).trigger('change');
             $('#edit_to_users').val(toUsers).trigger('change');
+            $('#edit_category_id').val(button.data('category_id') || '');
+            $('#edit_on_tap_action').val(button.data('on_tap_action') || 'general');
+            let editAudience = button.data('audience_type') || 'all';
+            if (editAudience === 'targeted') {
+                $('#edit_audience_targeted').prop('checked', true);
+            } else {
+                $('#edit_audience_all').prop('checked', true);
+            }
 
             if (image) {
                 offcanvas.find('#edit_notification_image_preview').attr('src', image).show();
@@ -838,12 +1399,153 @@
 
         $(document).ready(function () {
             $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
+
+            // Dynamic Reach Calculation Function
+            function calculateEstimatedReach() {
+                let categoryId = $('#category_selector__select').val();
+                let audienceType = $('input[name="audience_type"]:checked').val() || 'all';
+                let zoneIds = $('#zone_selector__select4').val() || [];
+                let toUsers = $('#user_selector__select').val() || ['customer'];
+
+                $('#reach_calculation_status').text('{{ translate("Updating...") }}');
+
+                $.ajax({
+                    url: '{{ route("admin.push-notification.estimate-reach") }}',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        category_id: categoryId,
+                        audience_type: audienceType,
+                        zone_ids: zoneIds,
+                        to_users: toUsers
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            $('#estimated_reach_display').text(res.estimated_reach);
+                            $('#estimated_reach_input').val(res.estimated_reach);
+                            let breakdown = `${res.customer_count} Customers`;
+                            if (res.provider_count > 0) breakdown += `, ${res.provider_count} Providers`;
+                            if (res.serviceman_count > 0) breakdown += `, ${res.serviceman_count} Servicemen`;
+                            $('#reach_breakdown_display').text(breakdown);
+                            $('#reach_calculation_status').text('{{ translate("Active Target") }}');
+                            $('#preview_summary_reach_text').text(`Reaching ~${res.estimated_reach} recipients (${res.customer_count} Customers)`);
+                        }
+                    },
+                    error: function () {
+                        $('#reach_calculation_status').text('{{ translate("Ready") }}');
+                    }
+                });
+            }
+
+            // --- Live Mobile Phone Preview Bindings ---
+            $('#notif_title_input').on('input', function() {
+                let val = $(this).val();
+                $('#preview_notif_title').text(val && val.trim() !== '' ? val : '{{ translate("Notification Title") }}');
+            });
+
+            $('#notif_desc_input').on('input', function() {
+                let val = $(this).val();
+                $('#preview_notif_body').text(val && val.trim() !== '' ? val : '{{ translate("Your push notification description will appear here on the customer mobile screen.") }}');
+            });
+
+            $('#imageUpload').on('change', function() {
+                if (this.files && this.files[0]) {
+                    let reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview_notif_img').attr('src', e.target.result);
+                        $('#phone_notif_image_container').removeClass('d-none');
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    $('#phone_notif_image_container').addClass('d-none');
+                    $('#preview_notif_img').attr('src', '');
+                }
+            });
+
+            function updatePreviewActionTag() {
+                let catText = $('#category_selector__select option:selected').text();
+                let catVal = $('#category_selector__select').val();
+                let actionVal = $('#on_tap_action__select').val();
+
+                let tagText = '{{ translate("Tap to open MMC App") }}';
+                if (actionVal === 'quote_form') {
+                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Quote Form") }}' : '{{ translate("Tap opens Quote Form") }}';
+                } else if (actionVal === 'service_page') {
+                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Details") }}' : '{{ translate("Tap opens Service Page") }}';
+                } else if (actionVal === 'offer_page') {
+                    tagText = '{{ translate("Tap opens Offers & Deals") }}';
+                }
+                $('#preview_notif_action_text').text(tagText);
+            }
+
+            $('#category_selector__select, #on_tap_action__select').on('change', updatePreviewActionTag);
+            updatePreviewActionTag();
+
+            $(document).on('change', '#category_selector__select, input[name="audience_type"], #zone_selector__select4, #user_selector__select', function () {
+                calculateEstimatedReach();
+            });
+
+            // Dynamic Audience Targeting Visibility: Only show when a Service Category is chosen
+            function toggleAudienceFilterVisibility() {
+                let catVal = $('#category_selector__select').val();
+                let catText = $('#category_selector__select option:selected').text();
+                if (catVal && catVal.trim() !== '') {
+                    $('#audience_targeting_filter_wrapper').slideDown(200);
+                    $('#targeted_service_label_text').text('{{ translate("Only customers who previously booked or requested quotes for") }} ' + catText.trim());
+                    if ($('#on_tap_action__select').val() === 'general') {
+                        $('#on_tap_action__select').val('quote_form').trigger('change');
+                    }
+                } else {
+                    $('#audience_targeting_filter_wrapper').slideUp(200);
+                    $('#audience_all').prop('checked', true);
+                }
+            }
+
+            $('#category_selector__select').on('change', function () {
+                toggleAudienceFilterVisibility();
+            });
+            toggleAudienceFilterVisibility();
+
+            // Action hints map
+            const actionHints = {
+                'general': '{{ translate("Customer taps notification to open MMC App home.") }}',
+                'quote_form': '{{ translate("Directly opens the Photo Upload Quote Form in customer app.") }}',
+                'service_page': '{{ translate("Directly opens the Service Details screen in customer app.") }}',
+                'offer_page': '{{ translate("Directly opens the MMC Promotions & Offers screen.") }}'
+            };
+            $('#on_tap_action__select').on('change', function () {
+                let act = $(this).val() || 'general';
+                $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> ' + (actionHints[act] || ''));
+            });
+
+            // Live character counters
+            $(document).on('input', '#notif_title_input', function () {
+                $('.title-count').text($(this).val().length + '/100');
+            });
+            $(document).on('input', '#notif_desc_input', function () {
+                $('.desc-count').text($(this).val().length + '/200');
+            });
+
+            // Initial reach calculation on page load
+            setTimeout(calculateEstimatedReach, 500);
             $('form').on('reset', function () {
                 setTimeout(function () {
-                    $('#zone_selector__select4').val(null).trigger('change');
-                    $('#user_selector__select').val(null).trigger('change');
+                    $('#zone_selector__select4').val(['all']).trigger('change');
+                    $('#user_selector__select').val(['customer']).trigger('change');
+                    $('#category_selector__select').val('').trigger('change');
+                    $('#on_tap_action__select').val('general').trigger('change');
+                    $('#audience_all').prop('checked', true);
+                    $('#send_type_immediate').prop('checked', true).trigger('change');
                     $('#imageUpload').val('');
                     $('.image-preview').attr('src', '').hide();
+                    $('#preview_notif_title').text('{{ translate("Notification Title") }}');
+                    $('#preview_notif_body').text('{{ translate("Your push notification description will appear here on customer phones.") }}');
+                    $('#phone_notif_image_container').addClass('d-none');
+                    $('#preview_notif_img').attr('src', '');
+                    updatePreviewActionTag();
+                    $('.title-count').text('0/100');
+                    $('.desc-count').text('0/200');
+                    setTimeout(calculateEstimatedReach, 300);
                 });
             });
         });

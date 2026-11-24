@@ -578,6 +578,118 @@
             @endif
         @endif
 
+        function updateBellCount(count) {
+            let displayCount = parseInt(count) || 0;
+            if (displayCount <= 0) {
+                displayCount = 0;
+            }
+            $('#notification_count').text(displayCount);
+            $('#header_notif_badge').text(displayCount);
+        }
+
+        function fetchProviderNotifications() {
+            $.get({
+                url: '{{ route('provider.get_updated_data') }}',
+                dataType: 'json',
+                success: function (response) {
+                    if (response && response.data) {
+                        let data = response.data;
+                        updateBellCount(data.notification_count);
+                        if (data.message !== undefined) {
+                            $('#message_count').text(data.message);
+                        }
+                        if (data.notification_template) {
+                            $('#show-notification-list').html(data.notification_template);
+                        }
+                    }
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            fetchProviderNotifications();
+        });
+
+        $(document).on('click', '.notification-icon', function () {
+            fetchProviderNotifications();
+        });
+
+        // 1. Mark single notification as read & track click on clicking item
+        $(document).on('click', '.provider-notif-item', function () {
+            let notifId = $(this).data('notif-id');
+            if (notifId) {
+                $.ajax({
+                    url: '{{ route('provider.notifications.mark-read') }}',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        notification_id: notifId,
+                        track_click: 1
+                    },
+                    success: function(resp) {
+                        if (resp && resp.unread_count !== undefined) {
+                            updateBellCount(resp.unread_count);
+                        }
+                    }
+                });
+            }
+        });
+
+        // 2. Mark single notification as read via button
+        $(document).on('click', '.btn-mark-read', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            let btn = $(this);
+            let notifId = btn.data('notif-id');
+            let row = btn.closest('.notification-row-item');
+
+            if (notifId) {
+                $.ajax({
+                    url: '{{ route('provider.notifications.mark-read') }}',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        notification_id: notifId
+                    },
+                    success: function(resp) {
+                        if (resp && resp.status === 'success') {
+                            updateBellCount(resp.unread_count);
+                            row.find('.unread-dot').remove();
+                            row.find('.status-pill-unread').replaceWith('<span class="badge bg-light text-muted border fz-10 py-1 px-2 status-pill-read">{{ translate("Read") }}</span>');
+                            row.find('.card-title').removeClass('fw-bold text-primary').addClass('fw-semibold');
+                            btn.remove();
+                            row.removeClass('bg-light bg-light-blue').css('background-color', 'transparent');
+                        }
+                    }
+                });
+            }
+        });
+
+        // 3. Mark all notifications as read
+        $(document).on('click', '.btn-mark-all-read', function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: '{{ route('provider.notifications.mark-all-read') }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(resp) {
+                    if (resp && resp.status === 'success') {
+                        updateBellCount(0);
+                        $('.unread-dot').remove();
+                        $('.status-pill-unread').replaceWith('<span class="badge bg-light text-muted border fz-10 py-1 px-2 status-pill-read">{{ translate("Read") }}</span>');
+                        $('.card-title').removeClass('fw-bold text-primary').addClass('fw-semibold');
+                        $('.btn-mark-read').remove();
+                        $('.notification-row-item').removeClass('bg-light bg-light-blue').css('background-color', 'transparent');
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success('{{ translate("All notifications marked as read") }}');
+                        }
+                    }
+                }
+            });
+        });
+
         @php($fcm_credentials = business_config('firebase_message_config', 'third_party')->live_values ?? [])
         @if(empty($fcm_credentials) || empty($fcm_credentials['apiKey']))
             @php($fcm_credentials = \Modules\BusinessSettingsModule\Entities\BusinessSettings::where('key_name', 'firebase_message_config')->first()?->live_values ?? [])
@@ -688,12 +800,31 @@
                         messaging.onMessage(function(payload) {
                             console.log("FCM Payload received:", payload);
                             playAudio();
+                            fetchProviderNotifications();
 
                             let title = payload.notification?.title || payload.data?.title || '{{ translate('New_Notification') }}';
                             let body = payload.notification?.body || payload.data?.body || payload.data?.description || "{{ translate('You_have_new_booking_arrived') }}";
                             let notifType = payload.data?.type || payload.data?.notification_type || 'general';
                             let bookingId = payload.data?.booking_id;
                             let image = payload.data?.image || payload.notification?.image || null;
+                            let notifId = payload.data?.notification_id || payload.notification?.notification_id || '';
+                            let actionType = payload.data?.action_type || 'general';
+
+                            function trackPushClick(id) {
+                                if (id) {
+                                    $.ajax({
+                                        url: '{{ route('push-notification.track-click') }}',
+                                        type: 'POST',
+                                        data: {
+                                            _token: '{{ csrf_token() }}',
+                                            notification_id: id
+                                        },
+                                        success: function(resp) {
+                                            console.log('Push click recorded:', resp);
+                                        }
+                                    });
+                                }
+                            }
 
                             if (window.Notification && Notification.permission === 'granted') {
                                 try {
@@ -710,26 +841,60 @@
                                     text: body,
                                     type: 'info',
                                     showCloseButton: true,
-                                    showCancelButton: false,
+                                    showCancelButton: true,
                                     focusConfirm: false,
                                     confirmButtonText: '{{ translate('Show_Bookings') }}',
+                                    cancelButtonText: '{{ translate('Close') }}',
+                                    confirmButtonColor: 'var(--bs-primary)',
                                 }).then((result) => {
                                     playAudio(false);
-                                    if (result.value || result.dismiss === 'close') {
+                                    if (result.value) {
+                                        trackPushClick(notifId);
                                         if (typeof checkBooking === 'function') checkBooking(payload.data?.booking_id);
                                         location.href = "{{ route('provider.booking.list') }}?booking_status=pending&service_type=all";
                                     }
                                 });
                             } else {
                                 let imgHtml = image ? `<div class="mb-3 text-center"><img src="${image}" class="img-fluid rounded" style="max-height: 180px;" alt=""></div>` : '';
+                                
+                                let targetUrl = null;
+                                let confirmBtnText = '{{ translate('OK') }}';
+                                let showCancel = false;
+
+                                if (actionType === 'quote_form' || notifType === 'service_request' || notifType === 'service_request_message') {
+                                    targetUrl = "{{ route('provider.service.request-list') }}";
+                                    confirmBtnText = '{{ translate('View Service Requests') }}';
+                                    showCancel = true;
+                                } else if (actionType === 'service_page') {
+                                    targetUrl = "{{ route('provider.service.available') }}";
+                                    confirmBtnText = '{{ translate('View Services') }}';
+                                    showCancel = true;
+                                } else {
+                                    targetUrl = null;
+                                    confirmBtnText = '{{ translate('OK') }}';
+                                    showCancel = false;
+                                }
+
                                 Swal.fire({
                                     title: title,
                                     html: `${imgHtml}<p class="mb-0 text-dark fz-14">${body}</p>`,
                                     type: 'info',
                                     showCloseButton: true,
-                                    confirmButtonText: '{{ translate('OK') }}',
-                                }).then(() => {
+                                    showCancelButton: showCancel,
+                                    confirmButtonText: confirmBtnText,
+                                    cancelButtonText: '{{ translate('Close') }}',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    cancelButtonColor: '#6c757d',
+                                }).then((result) => {
                                     playAudio(false);
+                                    if (result.value) {
+                                        trackPushClick(notifId);
+                                        if (targetUrl) {
+                                            setTimeout(function() {
+                                                location.href = targetUrl;
+                                            }, 150);
+                                        }
+                                    }
                                 });
                             }
                         });

@@ -41,8 +41,21 @@ Route::group(['prefix' => 'customer', 'as' => 'customer.', 'namespace' => 'Api\V
         Route::get('/', 'BannerController@index');
     });
 
+    Route::post('notification/track-click', 'NotificationController@trackClick');
+    Route::post('notifications/track-click', 'NotificationController@trackClick');
+
     Route::group(['prefix' => 'notification', 'as' => 'notification.', 'middleware' => ['auth:api']], function () {
         Route::get('/', 'NotificationController@index');
+        Route::post('mark-read', 'NotificationController@markRead');
+        Route::post('mark-all-read', 'NotificationController@markAllRead');
+        Route::post('track-click', 'NotificationController@trackClick');
+    });
+
+    Route::group(['prefix' => 'notifications', 'as' => 'notifications.', 'middleware' => ['auth:api']], function () {
+        Route::get('/', 'NotificationController@index');
+        Route::post('mark-read', 'NotificationController@markRead');
+        Route::post('mark-all-read', 'NotificationController@markAllRead');
+        Route::post('track-click', 'NotificationController@trackClick');
     });
 
     Route::resource('coupon', 'CouponController', ['only' => ['index']]);

@@ -116,8 +116,22 @@
                                     </div>
                                 </a>
 
-                                <div class="dropdown-menu dropdown-menu-right">
-                                    <div class="show-notification-list" id="show-notification-list"></div>
+                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-lg border-0 p-0" style="min-width: 340px; max-width: 380px;">
+                                    <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h6 class="m-0 fw-semibold fz-14 text-dark">{{ translate('Notifications') }}</h6>
+                                            <span class="badge bg-primary text-white rounded-pill fz-11" id="header_notif_badge">0</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm p-0 text-primary fz-12 fw-medium border-0 bg-transparent cursor-pointer d-flex align-items-center gap-1 btn-mark-all-read" title="{{ translate('Mark all as read') }}">
+                                            <span class="material-icons fz-14">done_all</span> {{ translate('Mark all read') }}
+                                        </button>
+                                    </div>
+                                    <div class="show-notification-list" id="show-notification-list" style="max-height: 380px; overflow-y: auto;"></div>
+                                    <div class="p-2 text-center border-top bg-light">
+                                        <a href="{{ route('provider.notifications.index') }}" class="fz-12 fw-semibold text-primary text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                                            {{ translate('View All Notifications') }} <span class="material-icons fz-14">arrow_forward</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </li>

@@ -57,6 +57,13 @@ $logo = getBusinessSettingsImageFullPath(key: 'business_logo', settingType: 'bus
                     <span class="link-title">{{ translate('dashboard') }}</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('provider.notifications.index') }}"
+                    class="{{ request()->is('provider/notifications*') ? 'active-menu' : '' }}">
+                    <span class="material-icons" title="{{ translate('Notifications') }}">notifications</span>
+                    <span class="link-title">{{ translate('Notifications') }}</span>
+                </a>
+            </li>
 
             <li class="nav-category" title="{{ translate('booking_management') }}">
                 {{ translate('booking_management') }}

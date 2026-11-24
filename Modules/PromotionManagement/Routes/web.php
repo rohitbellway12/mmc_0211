@@ -87,6 +87,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin',
         Route::delete('delete/{id}', 'PushNotificationController@destroy')->name('delete');
         Route::any('download', 'PushNotificationController@download')->name('download');
         Route::get('resend/{id}', 'PushNotificationController@resendNotification')->name('resend');
+        Route::post('estimate-reach', 'PushNotificationController@estimateReach')->name('estimate-reach');
     });
 
     Route::group(['prefix' => 'booking-reminder', 'as' => 'booking-reminder.'], function () {
@@ -97,6 +98,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Web\Admin',
     });
 
 });
+
+// Global Push Notification Web Click Tracking Route
+Route::post('push-notification/track-click', [Modules\PromotionManagement\Http\Controllers\Web\Admin\PushNotificationController::class, 'trackClickWeb'])->name('push-notification.track-click');
 
 Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Web\Provider', 'middleware' => ['provider']], function () {
 

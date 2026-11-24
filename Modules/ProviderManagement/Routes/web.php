@@ -85,6 +85,9 @@ Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Web\P
     Route::post('search-routing', 'ProviderController@searchRouting')->name('search.routing');
     Route::get('lang/{locale}', [LanguageController::class, 'lang'])->name('lang');
     Route::get('get-updated-data', 'ProviderController@getUpdatedData')->name('get_updated_data');
+    Route::get('notifications', 'ProviderController@allNotifications')->name('notifications.index');
+    Route::post('notifications/mark-read', 'ProviderController@markNotificationRead')->name('notifications.mark-read');
+    Route::post('notifications/mark-all-read', 'ProviderController@markAllNotificationsRead')->name('notifications.mark-all-read');
     Route::get('dashboard', 'ProviderController@dashboard')->name('dashboard');
     Route::post('/set-modal-closed', 'ProviderController@setModalClosed')->name('set.modal.closed');
     Route::get('update-dashboard-earning-graph', 'ProviderController@updateDashboardEarningGraph')->name('update-dashboard-earning-graph');

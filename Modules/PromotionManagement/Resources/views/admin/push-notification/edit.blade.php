@@ -68,6 +68,46 @@
                                             </div>
                                         </div>
 
+                                        {{-- Service Category & Deep Link Options --}}
+                                        <div class="row mb-30">
+                                            <div class="col-lg-6">
+                                                <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Service Category')}}</label>
+                                                <select class="form-select theme-input-style w-100" name="category_id" id="category_selector__select">
+                                                    <option value="">-- {{translate('General Notification (No Category)')}} --</option>
+                                                    @foreach($categories as $cat)
+                                                        <option value="{{$cat->id}}" {{ old('category_id', $pushNotification->category_id) == $cat->id ? 'selected' : '' }}>{{$cat->name}}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('On-Tap Action (Deep Link)')}}</label>
+                                                <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
+                                                    <option value="general" {{ old('on_tap_action', $pushNotification->on_tap_action ?? 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / General')}}</option>
+                                                    <option value="quote_form" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
+                                                    <option value="service_page" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {{-- Target Audience Filter --}}
+                                        <div class="mb-30">
+                                            <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('Target Audience')}}</label>
+                                            <div class="d-flex gap-4 align-items-center p-3 bg-white rounded border">
+                                                <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                    <input class="form-check-input" type="radio" name="audience_type" id="audience_all" value="all" {{ old('audience_type', $pushNotification->audience_type ?? 'all') == 'all' ? 'checked' : '' }}>
+                                                    <label class="form-check-label cursor-pointer text-dark fz-12" for="audience_all">
+                                                        <strong>{{translate('All Eligible Users in Area')}}</strong>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+                                                    <input class="form-check-input" type="radio" name="audience_type" id="audience_targeted" value="targeted" {{ old('audience_type', $pushNotification->audience_type) == 'targeted' ? 'checked' : '' }}>
+                                                    <label class="form-check-label cursor-pointer text-dark fz-12" for="audience_targeted">
+                                                        <strong>{{translate('Targeted Customers Only')}}</strong>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {{-- Edit Scheduling Options --}}
                                         <div class="mt-3 pt-3 border-top">
                                             <div class="mb-2 text-dark d-flex align-items-center gap-1 fw-semibold fz-13">

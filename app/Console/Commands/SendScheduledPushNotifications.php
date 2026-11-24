@@ -8,6 +8,9 @@ use Modules\PromotionManagement\Entities\PushNotification;
 use Modules\ProviderManagement\Entities\Provider;
 use Modules\UserManagement\Entities\Serviceman;
 use Modules\UserManagement\Entities\User;
+use Modules\CategoryManagement\Entities\Category;
+use Modules\BookingModule\Entities\Booking;
+use Illuminate\Support\Facades\DB;
 
 class SendScheduledPushNotifications extends Command
 {
@@ -101,28 +104,42 @@ class SendScheduledPushNotifications extends Command
 
         $hasAllZones = in_array('all', $zoneIds, true);
 
-        // Send Topic Notifications
-        foreach ($filteredUsers as $user_type) {
-            try {
-                topic_notification("{$user_type}-all", $title, $description, $coverImage, null, 'general');
-            } catch (\Exception $e) {}
+        $deepLinkData = [
+            'notification_id' => (string) $notification->id,
+            'action_type' => (string) ($notification->on_tap_action ?? 'general'),
+            'category_id' => (string) ($notification->category_id ?? ''),
+        ];
 
-            foreach ($zoneIds as $zone_id) {
-                try {
-                    topic_notification("{$user_type}-{$zone_id}", $title, $description, $coverImage, null, 'general');
-                } catch (\Exception $e) {
-                    // Ignore topic send failure
+        $isTargeted = (($notification->audience_type ?? 'all') === 'targeted' && !empty($notification->category_id));
+
+        if ($isTargeted) {
+            // Send Direct Device Notifications via FCM Tokens for targeted category users
+            $sentCount = $this->sendDeviceNotifications($filteredUsers, $zoneIds, $title, $description, $coverImage, $hasAllZones, $deepLinkData, $notification->audience_type ?? 'all', $notification->category_id ?? null);
+        } else {
+            // General broadcast: Send ONLY once per scope (All zones OR specific zones, never duplicate)
+            if ($hasAllZones) {
+                foreach ($filteredUsers as $user_type) {
+                    try {
+                        topic_notification("{$user_type}-all", $title, $description, $coverImage, null, 'general', $deepLinkData);
+                    } catch (\Exception $e) {}
+                }
+            } else {
+                foreach ($filteredUsers as $user_type) {
+                    foreach ($zoneIds as $zone_id) {
+                        try {
+                            topic_notification("{$user_type}-{$zone_id}", $title, $description, $coverImage, null, 'general', $deepLinkData);
+                        } catch (\Exception $e) {}
+                    }
                 }
             }
+            $sentCount = (int) ($notification->estimated_reach ?: 1);
         }
-
-        // Send Direct Device Notifications via FCM Tokens
-        $this->sendDeviceNotifications($filteredUsers, $zoneIds, $title, $description, $coverImage, $hasAllZones);
 
         // Update notification state
         $notification->update([
             'is_sent' => 1,
             'last_sent_at' => Carbon::now(),
+            'sent_count' => $sentCount,
         ]);
 
         \Log::info("[Scheduled Push] Dispatched successfully: ID {$notification->id}, Title: {$notification->title}");
@@ -132,7 +149,7 @@ class SendScheduledPushNotifications extends Command
     /**
      * Send direct device notifications to targeted users with active FCM tokens.
      */
-    protected function sendDeviceNotifications(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage, bool $hasAllZones = false): void
+    protected function sendDeviceNotifications(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage, bool $hasAllZones = false, array $deepLinkData = [], string $audienceType = 'all', ?string $categoryId = null): int
     {
         $tokens = [];
         $imageUrl = null;
@@ -148,7 +165,7 @@ class SendScheduledPushNotifications extends Command
 
         // 1. Customers
         if (in_array('customer', $filteredUsers, true)) {
-            $customerTokens = User::where('user_type', 'customer')
+            $customerQuery = User::where('user_type', 'customer')
                 ->where('is_active', 1)
                 ->whereNotNull('fcm_token')
                 ->where('fcm_token', '!=', '')
@@ -158,10 +175,29 @@ class SendScheduledPushNotifications extends Command
                             $aq->whereIn('zone_id', $zoneIds);
                         })->orWhereDoesntHave('addresses');
                     });
-                })
-                ->pluck('fcm_token')
-                ->toArray();
+                });
 
+            if ($audienceType === 'targeted' && !empty($categoryId)) {
+                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->push($categoryId)->toArray();
+
+                $bookedCustomerIds = Booking::whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $estimatedCustomerIds = DB::table('booking_estimates')
+                    ->whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $targetedCustomerIds = array_unique(array_merge($bookedCustomerIds, $estimatedCustomerIds));
+                $customerQuery->whereIn('id', $targetedCustomerIds);
+            }
+
+            $customerTokens = $customerQuery->pluck('fcm_token')->toArray();
             $tokens = array_merge($tokens, $customerTokens);
         }
 
@@ -211,10 +247,12 @@ class SendScheduledPushNotifications extends Command
 
         foreach ($tokens as $token) {
             try {
-                device_notification($token, $title, $description, $imageUrl, null, 'general');
+                device_notification($token, $title, $description, $imageUrl, null, 'general', null, null, $deepLinkData);
             } catch (\Exception $e) {
                 // Ignore failure for individual device token
             }
         }
+
+        return count($tokens);
     }
 }

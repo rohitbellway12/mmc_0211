@@ -53,10 +53,20 @@ if (!function_exists('device_notification')) {
     function device_notification($fcm_token, $title, $description, $image, $booking_id, $type='status', $channel_id = null, $user_id = null, $data=null, $advertisement_id=null, $bookingType=null, $repeat_type=null)
     {
         $title = text_variable_data_format($title, $booking_id, $type, $data, $bookingType);
+
+        $customPayload = [];
+        if (is_array($data)) {
+            foreach ($data as $k => $v) {
+                if (!is_null($v)) {
+                    $customPayload[(string)$k] = (string)$v;
+                }
+            }
+        }
+
         $postData = [
             'message' => [
                 "token" => $fcm_token,
-                "data" => [
+                "data" => array_merge([
                     "title" => (string)$title,
                     "body" => (string)$description,
                     "booking_id" => (string)$booking_id,
@@ -67,7 +77,8 @@ if (!function_exists('device_notification')) {
                     "advertisement_id" => (string)$advertisement_id,
                     "booking_type" => (string)$bookingType,
                     "repeat_type" => (string)$repeat_type,
-                ],
+                    "click_action" => "FLUTTER_NOTIFICATION_CLICK",
+                ], $customPayload),
                 "notification" => array_merge([
                     'title' => (string)$title,
                     'body' => (string)$description,
@@ -99,20 +110,30 @@ if (!function_exists('device_notification')) {
 }
 
 if (!function_exists('topic_notification')) {
-    function topic_notification($topic, $title, $description, $image, $booking_id, $type='status')
+    function topic_notification($topic, $title, $description, $image, $booking_id, $type='status', $data = null)
     {
         $image = asset('storage/app/public/push-notification') . '/' . $image;
+
+        $customPayload = [];
+        if (is_array($data)) {
+            foreach ($data as $k => $v) {
+                if (!is_null($v)) {
+                    $customPayload[(string)$k] = (string)$v;
+                }
+            }
+        }
 
         $postData = [
             'message' => [
                 "topic" => $topic,
-                "data" => [
+                "data" => array_merge([
                     "title" => (string)$title,
                     "body" => (string)$description,
                     "booking_id" => (string)$booking_id,
                     "type" => (string)$type,
-                    "image" => (string)$image
-                ],
+                    "image" => (string)$image,
+                    "click_action" => "FLUTTER_NOTIFICATION_CLICK",
+                ], $customPayload),
                 "notification" => [
                     "title" => (string)$title,
                     "body" => (string)$description,

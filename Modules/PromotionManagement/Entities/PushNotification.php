@@ -27,8 +27,14 @@ class PushNotification extends Model
     protected $fillable = [
         'id', 'title', 'description', 'to_users', 'zone_ids', 'cover_image', 'is_active',
         'notification_type', 'booking_id', 'booking_status', 'reference_id',
-        'send_type', 'repeat_type', 'scheduled_at', 'scheduled_time', 'is_sent', 'last_sent_at'
+        'send_type', 'repeat_type', 'scheduled_at', 'scheduled_time', 'is_sent', 'last_sent_at',
+        'category_id', 'on_tap_action', 'audience_type', 'sent_count', 'click_count', 'estimated_reach'
     ];
+
+    public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\CategoryManagement\Entities\Category::class, 'category_id', 'id');
+    }
 
     public function getNotificationTypeAttribute($value)
     {

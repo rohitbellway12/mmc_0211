@@ -133,8 +133,24 @@ class ProviderController extends Controller
                     ->orWhere('provider_id', $request->user()->provider->id);
             })
             ->where('is_checked', 0)->count();
-        $notificationCount = $this->push_notification->whereJsonContains('zone_ids', $request->user()->provider->zone_id)->whereJsonContains('to_users', 'provider-admin')->count();
-        $notifications = $this->push_notification->whereJsonContains('zone_ids', $request->user()->provider->zone_id)->whereJsonContains('to_users', 'provider-admin')->latest()->take(50)->get();
+        $zoneId = $request->user()->provider->zone_id;
+        $readIds = DB::table('push_notification_reads')
+            ->where('user_id', $request->user()->id)
+            ->pluck('notification_id')
+            ->toArray();
+
+        $notificationQuery = $this->push_notification
+            ->where(function ($query) use ($zoneId) {
+                $query->whereJsonContains('zone_ids', $zoneId)
+                    ->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($query) {
+                $query->whereJsonContains('to_users', 'provider-admin')
+                    ->orWhereJsonContains('to_users', 'all');
+            });
+
+        $notificationCount = (clone $notificationQuery)->whereNotIn('id', $readIds)->count();
+        $notifications = $notificationQuery->latest()->take(50)->get();
         $message = $this->channelList->wherehas('channelUsers', function ($query) use ($request) {
             $query->where('user_id', $request->user()->id)->where('is_read', 0);
         })->count();
@@ -170,11 +186,140 @@ class ProviderController extends Controller
             'data' => [
                 'booking' => $booking,
                 'notification_count' => $notificationCount,
-                'notification_template' => view('providermanagement::provider.partials._notifications', compact('notifications'))->render(),
+                'notification_template' => view('providermanagement::provider.partials._notifications', compact('notifications', 'readIds'))->render(),
                 'message' => $message,
                 'unchecked_posts' => $unchecked_posts->count(),
                 'post_content' => $post ? view('providermanagement::provider.partials._bidding_service_request', compact('post', 'distance'))->render() : null
             ]
+        ]);
+    }
+
+    /**
+     * Display all notifications for the provider.
+     * @param Request $request
+     * @return Renderable
+     */
+    public function allNotifications(Request $request): Renderable
+    {
+        $search = $request->input('search');
+        $user = $request->user();
+        $zoneId = $user->provider->zone_id;
+
+        $readIds = DB::table('push_notification_reads')
+            ->where('user_id', $user->id)
+            ->pluck('notification_id')
+            ->toArray();
+
+        $notifications = $this->push_notification
+            ->where(function ($query) use ($zoneId) {
+                $query->whereJsonContains('zone_ids', $zoneId)
+                    ->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($query) {
+                $query->whereJsonContains('to_users', 'provider-admin')
+                    ->orWhereJsonContains('to_users', 'all');
+            })
+            ->when($search, function ($query) use ($search) {
+                $keys = explode(' ', $search);
+                $query->where(function ($q) use ($keys) {
+                    foreach ($keys as $key) {
+                        $q->orWhere('title', 'LIKE', '%' . $key . '%')
+                          ->orWhere('description', 'LIKE', '%' . $key . '%');
+                    }
+                });
+            })
+            ->with('category')
+            ->latest()
+            ->paginate(pagination_limit())
+            ->appends(['search' => $search]);
+
+        return view('providermanagement::provider.notifications', compact('notifications', 'search', 'readIds'));
+    }
+
+    /**
+     * Mark an individual notification as read.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function markNotificationRead(Request $request): JsonResponse
+    {
+        $notificationId = $request->input('notification_id');
+        $user = $request->user();
+
+        if ($notificationId) {
+            DB::table('push_notification_reads')->insertOrIgnore([
+                'user_id' => $user->id,
+                'notification_id' => $notificationId,
+                'read_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            if ($request->input('track_click', false)) {
+                $this->push_notification->where('id', $notificationId)->increment('click_count');
+            }
+
+            $zoneId = $user->provider->zone_id;
+            $readIds = DB::table('push_notification_reads')->where('user_id', $user->id)->pluck('notification_id')->toArray();
+            $unreadCount = $this->push_notification
+                ->where(function ($query) use ($zoneId) {
+                    $query->whereJsonContains('zone_ids', $zoneId)->orWhereJsonContains('zone_ids', 'all');
+                })
+                ->where(function ($query) {
+                    $query->whereJsonContains('to_users', 'provider-admin')->orWhereJsonContains('to_users', 'all');
+                })
+                ->whereNotIn('id', $readIds)
+                ->count();
+
+            return response()->json([
+                'status' => 'success',
+                'unread_count' => $unreadCount,
+            ]);
+        }
+
+        return response()->json(['status' => 'error'], 400);
+    }
+
+    /**
+     * Mark all notifications as read for the logged-in provider.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function markAllNotificationsRead(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $zoneId = $user->provider->zone_id;
+
+        $notificationIds = $this->push_notification
+            ->where(function ($query) use ($zoneId) {
+                $query->whereJsonContains('zone_ids', $zoneId)->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($query) {
+                $query->whereJsonContains('to_users', 'provider-admin')->orWhereJsonContains('to_users', 'all');
+            })
+            ->pluck('id')
+            ->toArray();
+
+        $records = [];
+        $now = now();
+        foreach ($notificationIds as $id) {
+            $records[] = [
+                'user_id' => $user->id,
+                'notification_id' => $id,
+                'read_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (!empty($records)) {
+            DB::table('push_notification_reads')->insertOrIgnore($records);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'unread_count' => 0,
+            'message' => translate('All notifications marked as read')
         ]);
     }
 
@@ -188,7 +333,23 @@ class ProviderController extends Controller
      */
     public function dashboard(Request $request, Transaction $transaction, SubscribedService $subscribedService, Serviceman $serviceman): Renderable
     {
-        $notification = $this->push_notification->whereJsonContains('zone_ids', $request->user()->provider->zone_id)->get()->count();
+        $zoneId = $request->user()->provider->zone_id;
+        $readIds = DB::table('push_notification_reads')
+            ->where('user_id', $request->user()->id)
+            ->pluck('notification_id')
+            ->toArray();
+
+        $notification = $this->push_notification
+            ->where(function ($query) use ($zoneId) {
+                $query->whereJsonContains('zone_ids', $zoneId)
+                    ->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($query) {
+                $query->whereJsonContains('to_users', 'provider-admin')
+                    ->orWhereJsonContains('to_users', 'all');
+            })
+            ->whereNotIn('id', $readIds)
+            ->count();
         session()->put('notification_count', $notification);
 
         $data = [];

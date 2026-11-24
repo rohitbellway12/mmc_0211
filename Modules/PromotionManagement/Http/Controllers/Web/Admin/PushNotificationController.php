@@ -19,6 +19,9 @@ use Modules\ZoneManagement\Entities\Zone;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\Serviceman;
 use Modules\ProviderManagement\Entities\Provider;
+use Modules\CategoryManagement\Entities\Category;
+use Modules\BookingModule\Entities\Booking;
+use Illuminate\Support\Facades\DB;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -109,7 +112,10 @@ class PushNotificationController extends Controller
             $query->zone_ids = $this->zone->select('id', 'name')->whereIn('id', $query->zone_ids)->get();
         });
 
-        return view('promotionmanagement::admin.push-notification.create', compact('zones', 'pushNotification', 'toUserType', 'search'));
+        $categories = Category::ofStatus(1)->ofType('main')->orderBy('name', 'asc')->get();
+        $pushNotification->load('category');
+
+        return view('promotionmanagement::admin.push-notification.create', compact('zones', 'pushNotification', 'toUserType', 'search', 'categories'));
     }
 
     /**
@@ -125,17 +131,23 @@ class PushNotificationController extends Controller
         $validatedData = $request->validate([
             'title' => 'required|string|max:100',
             'description' => 'required|string|max:200',
-            'to_users' => 'required|array',
+            'to_users' => 'nullable|array',
             'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
-            'zone_ids' => 'required|array',
-            'cover_image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10000',
-            'send_type' => 'required|in:immediate,scheduled',
-            'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
+            'zone_ids' => 'nullable|array',
+            'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:10000',
+            'send_type' => 'nullable|in:immediate,scheduled',
+            'repeat_type' => 'nullable|in:once,daily',
             'scheduled_at' => 'nullable',
             'scheduled_time' => 'nullable',
+            'category_id' => 'nullable',
+            'on_tap_action' => 'nullable|in:general,quote_form,service_page,offer_page',
+            'audience_type' => 'nullable|in:all,targeted',
+            'estimated_reach' => 'nullable|numeric',
         ]);
 
-        $image_name = file_uploader('push-notification/', 'png', $request->file('cover_image'));
+        $image_name = $request->hasFile('cover_image') ? file_uploader('push-notification/', 'png', $request->file('cover_image')) : null;
+
+        
 
         $permissionsMap = [
             'customer' => true,
@@ -143,16 +155,17 @@ class PushNotificationController extends Controller
             'provider-serviceman' => true
         ];
 
+        $rawUsers = !empty($validatedData['to_users']) ? $validatedData['to_users'] : ['customer'];
         $filteredUsers = array_filter(array_map(function($user) use ($permissionsMap) {
-            return $permissionsMap[$user] ? $user : null;
-        }, $validatedData['to_users']));
+            return ($permissionsMap[$user] ?? false) ? $user : null;
+        }, $rawUsers));
 
-        if (in_array('all', $validatedData['to_users'], true)) {
-            $filteredUsers = array_keys(array_filter($permissionsMap));
+        if (empty($filteredUsers) || in_array('all', $rawUsers, true)) {
+            $filteredUsers = in_array('all', $rawUsers, true) ? array_keys(array_filter($permissionsMap)) : ['customer'];
         }
 
-        $rawZoneIds = $validatedData['zone_ids'] ?? [];
-        $hasAllZones = in_array('all', $rawZoneIds, true);
+        $rawZoneIds = !empty($validatedData['zone_ids']) ? $validatedData['zone_ids'] : ['all'];
+        $hasAllZones = in_array('all', $rawZoneIds, true) || empty($rawZoneIds);
         if ($hasAllZones) {
             $savedZoneIds = $this->zone->ofStatus(1)->pluck('id')->toArray();
         } else {
@@ -164,7 +177,7 @@ class PushNotificationController extends Controller
         $isImmediate = ($sendType === 'immediate');
 
         if ($isImmediate) {
-            $this->pushNotification->create([
+            $createdPush = $this->pushNotification->create([
                 'title' => $validatedData['title'],
                 'description' => $validatedData['description'],
                 'to_users' => $filteredUsers,
@@ -177,23 +190,42 @@ class PushNotificationController extends Controller
                 'scheduled_time' => null,
                 'is_sent' => 1,
                 'last_sent_at' => now(),
+                'category_id' => $request->input('category_id') ?: null,
+                'on_tap_action' => $request->input('on_tap_action', 'general'),
+                'audience_type' => $request->input('audience_type', 'all'),
+                'estimated_reach' => (int) $request->input('estimated_reach', 0),
             ]);
 
-            foreach ($filteredUsers as $user_type) {
-                try {
-                    topic_notification("{$user_type}-all", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
-                } catch (\Exception $e) {}
+            $deepLinkData = [
+                'notification_id' => (string) $createdPush->id,
+                'action_type' => (string) ($createdPush->on_tap_action ?? 'general'),
+                'category_id' => (string) ($createdPush->category_id ?? ''),
+            ];
 
-                foreach ($savedZoneIds as $zone_id) {
-                    try {
-                        topic_notification("{$user_type}-{$zone_id}", $validatedData['title'], $validatedData['description'], $image_name, null, 'general');
-                    } catch (\Exception $e) {
-                        // ignore
+            if ($createdPush->audience_type === 'targeted' && !empty($createdPush->category_id)) {
+                // Targeted campaign: Only send directly to eligible targeted device tokens
+                $sentCount = $this->sendDeviceNotificationsToUsers($filteredUsers, $savedZoneIds, $validatedData['title'], $validatedData['description'], $image_name, $hasAllZones, $deepLinkData, $createdPush->audience_type, $createdPush->category_id);
+                $createdPush->update(['sent_count' => $sentCount]);
+            } else {
+                // General broadcast: Send ONLY once per audience scope (All zones OR specific zones, never duplicate)
+                if ($hasAllZones) {
+                    foreach ($filteredUsers as $user_type) {
+                        try {
+                            topic_notification("{$user_type}-all", $validatedData['title'], $validatedData['description'], $image_name, null, 'general', $deepLinkData);
+                        } catch (\Exception $e) {}
+                    }
+                } else {
+                    foreach ($filteredUsers as $user_type) {
+                        foreach ($savedZoneIds as $zone_id) {
+                            try {
+                                topic_notification("{$user_type}-{$zone_id}", $validatedData['title'], $validatedData['description'], $image_name, null, 'general', $deepLinkData);
+                            } catch (\Exception $e) {}
+                        }
                     }
                 }
+                $sentCount = (int) ($createdPush->estimated_reach ?: 1);
+                $createdPush->update(['sent_count' => $sentCount]);
             }
-
-            $this->sendDeviceNotificationsToUsers($filteredUsers, $savedZoneIds, $validatedData['title'], $validatedData['description'], $image_name, $hasAllZones);
 
             Toastr::success(translate('Push notification sent successfully'));
         } else {
@@ -224,6 +256,10 @@ class PushNotificationController extends Controller
                         'scheduled_time' => null,
                         'is_sent' => 0,
                         'last_sent_at' => null,
+                        'category_id' => $request->input('category_id') ?: null,
+                        'on_tap_action' => $request->input('on_tap_action', 'general'),
+                        'audience_type' => $request->input('audience_type', 'all'),
+                        'estimated_reach' => (int) $request->input('estimated_reach', 0),
                     ]);
                 }
 
@@ -253,6 +289,10 @@ class PushNotificationController extends Controller
                         'scheduled_time' => $systemTime,
                         'is_sent' => 0,
                         'last_sent_at' => null,
+                        'category_id' => $request->input('category_id') ?: null,
+                        'on_tap_action' => $request->input('on_tap_action', 'general'),
+                        'audience_type' => $request->input('audience_type', 'all'),
+                        'estimated_reach' => (int) $request->input('estimated_reach', 0),
                     ]);
                 }
 
@@ -290,19 +330,35 @@ class PushNotificationController extends Controller
         $zoneIds = $pushNotification['zone_ids'] ?? [];
         $hasAllZones = in_array('all', $zoneIds, true);
 
-        foreach ($filteredUsers as $user_type) {
-            try {
-                topic_notification("{$user_type}-all", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general');
-            } catch (\Exception $exception) {}
+        $deepLinkData = [
+            'notification_id' => (string) $pushNotification->id,
+            'action_type' => (string) ($pushNotification->on_tap_action ?? 'general'),
+            'category_id' => (string) ($pushNotification->category_id ?? ''),
+        ];
 
-            foreach ($zoneIds as $zone_id) {
-                try {
-                    topic_notification("{$user_type}-{$zone_id}", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general');
-                } catch (\Exception $exception) {}
+        if (($pushNotification->audience_type ?? 'all') === 'targeted' && !empty($pushNotification->category_id)) {
+            // Targeted campaign: Only send directly to eligible targeted device tokens
+            $sentCount = $this->sendDeviceNotificationsToUsers($filteredUsers, $zoneIds, $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], $hasAllZones, $deepLinkData, $pushNotification->audience_type ?? 'all', $pushNotification->category_id ?? null);
+            $pushNotification->increment('sent_count', $sentCount);
+        } else {
+            // General broadcast: Send ONLY once per scope (All zones OR specific zones, never duplicate)
+            if ($hasAllZones) {
+                foreach ($filteredUsers as $user_type) {
+                    try {
+                        topic_notification("{$user_type}-all", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general', $deepLinkData);
+                    } catch (\Exception $exception) {}
+                }
+            } else {
+                foreach ($filteredUsers as $user_type) {
+                    foreach ($zoneIds as $zone_id) {
+                        try {
+                            topic_notification("{$user_type}-{$zone_id}", $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], null, 'general', $deepLinkData);
+                        } catch (\Exception $exception) {}
+                    }
+                }
             }
+            $pushNotification->increment('sent_count', (int) ($pushNotification->estimated_reach ?: 1));
         }
-
-        $this->sendDeviceNotificationsToUsers($filteredUsers, $zoneIds, $pushNotification['title'], $pushNotification['description'], $pushNotification['cover_image'], $hasAllZones);
 
         Toastr::success(translate('push notification send successfully'));
         return back();
@@ -330,7 +386,8 @@ class PushNotificationController extends Controller
             }
             $pushNotification->zone_ids = $zoneArray;
         }
-        return view('promotionmanagement::admin.push-notification.edit', compact('pushNotification','zones'));
+        $categories = Category::ofStatus(1)->ofType('main')->orderBy('name', 'asc')->get();
+        return view('promotionmanagement::admin.push-notification.edit', compact('pushNotification', 'zones', 'categories'));
     }
 
     /**
@@ -354,6 +411,14 @@ class PushNotificationController extends Controller
             'repeat_type' => 'nullable|required_if:send_type,scheduled|in:once,daily',
             'scheduled_at' => 'nullable',
             'scheduled_time' => 'nullable',
+            'category_id' => 'nullable',
+            'on_tap_action' => 'required|in:general,quote_form,service_page,offer_page',
+            'audience_type' => 'required|in:all,targeted',
+            'estimated_reach' => 'nullable|numeric',
+            'category_id' => 'nullable',
+            'on_tap_action' => 'required|in:general,quote_form,service_page,offer_page',
+            'audience_type' => 'required|in:all,targeted',
+            'estimated_reach' => 'nullable|numeric',
         ]);
 
         $pushNotification = $this->pushNotification->where(['id' => $id])->first();
@@ -394,6 +459,12 @@ class PushNotificationController extends Controller
         $pushNotification->repeat_type = $repeatType;
         $pushNotification->scheduled_at = $scheduledAt;
         $pushNotification->scheduled_time = $scheduledTime;
+        $pushNotification->category_id = $request->input('category_id') ?: null;
+        $pushNotification->on_tap_action = $request->input('on_tap_action', 'general');
+        $pushNotification->audience_type = $request->input('audience_type', 'all');
+        if ($request->filled('estimated_reach')) {
+            $pushNotification->estimated_reach = (int) $request->input('estimated_reach');
+        }
 
         if ($sendType === 'scheduled') {
             $pushNotification->is_sent = 0;
@@ -424,6 +495,10 @@ class PushNotificationController extends Controller
                         'scheduled_time' => null,
                         'is_sent' => 0,
                         'last_sent_at' => null,
+                        'category_id' => $request->input('category_id') ?: null,
+                        'on_tap_action' => $request->input('on_tap_action', 'general'),
+                        'audience_type' => $request->input('audience_type', 'all'),
+                        'estimated_reach' => (int) $request->input('estimated_reach', 0),
                     ]);
                 }
             } elseif ($repeatType === 'daily' && count($times) > 1) {
@@ -442,6 +517,10 @@ class PushNotificationController extends Controller
                         'scheduled_time' => $systemTime,
                         'is_sent' => 0,
                         'last_sent_at' => null,
+                        'category_id' => $request->input('category_id') ?: null,
+                        'on_tap_action' => $request->input('on_tap_action', 'general'),
+                        'audience_type' => $request->input('audience_type', 'all'),
+                        'estimated_reach' => (int) $request->input('estimated_reach', 0),
                     ]);
                 }
             }
@@ -518,8 +597,17 @@ class PushNotificationController extends Controller
     /**
      * Send direct device notifications to targeted users with active FCM tokens.
      */
-    private function sendDeviceNotificationsToUsers(array $filteredUsers, array $zoneIds, string $title, string $description, ?string $coverImage, bool $hasAllZones = false): void
-    {
+    private function sendDeviceNotificationsToUsers(
+        array $filteredUsers,
+        array $zoneIds,
+        string $title,
+        string $description,
+        ?string $coverImage,
+        bool $hasAllZones = false,
+        array $deepLinkData = [],
+        string $audienceType = 'all',
+        ?string $categoryId = null
+    ): int {
         $tokens = [];
         $imageUrl = null;
         if (!empty($coverImage)) {
@@ -533,8 +621,8 @@ class PushNotificationController extends Controller
         }
 
         // 1. Customers
-        if (in_array('customer', $filteredUsers)) {
-            $customerTokens = User::where('user_type', 'customer')
+        if (in_array('customer', $filteredUsers, true)) {
+            $customerQuery = User::where('user_type', 'customer')
                 ->where('is_active', 1)
                 ->whereNotNull('fcm_token')
                 ->where('fcm_token', '!=', '')
@@ -544,15 +632,34 @@ class PushNotificationController extends Controller
                             $aq->whereIn('zone_id', $zoneIds);
                         })->orWhereDoesntHave('addresses');
                     });
-                })
-                ->pluck('fcm_token')
-                ->toArray();
+                });
 
+            if ($audienceType === 'targeted' && !empty($categoryId)) {
+                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->push($categoryId)->toArray();
+
+                $bookedCustomerIds = Booking::whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $estimatedCustomerIds = DB::table('booking_estimates')
+                    ->whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $targetedCustomerIds = array_unique(array_merge($bookedCustomerIds, $estimatedCustomerIds));
+                $customerQuery->whereIn('id', $targetedCustomerIds);
+            }
+
+            $customerTokens = $customerQuery->pluck('fcm_token')->toArray();
             $tokens = array_merge($tokens, $customerTokens);
         }
 
         // 2. Providers
-        if (in_array('provider-admin', $filteredUsers)) {
+        if (in_array('provider-admin', $filteredUsers, true)) {
             $providerUserIds = Provider::where('is_active', 1)
                 ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
@@ -571,7 +678,7 @@ class PushNotificationController extends Controller
         }
 
         // 3. Servicemen
-        if (in_array('provider-serviceman', $filteredUsers)) {
+        if (in_array('provider-serviceman', $filteredUsers, true)) {
             $providerIds = Provider::where('is_active', 1)
                 ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
@@ -597,16 +704,112 @@ class PushNotificationController extends Controller
 
         foreach ($tokens as $token) {
             try {
-                device_notification($token, $title, $description, $imageUrl, null, 'general');
+                device_notification($token, $title, $description, $imageUrl, null, 'general', null, null, $deepLinkData);
             } catch (\Exception $e) {
                 // Ignore any single failed token and continue
             }
         }
+
+        return count($tokens);
     }
 
     /**
-     * Parse and format datetime or time directly in company timezone without client offset shifting.
+     * Estimate recipient reach dynamically.
+     * @param Request $request
+     * @return JsonResponse
      */
+    public function estimateReach(Request $request): JsonResponse
+    {
+        $categoryId = $request->input('category_id');
+        $audienceType = $request->input('audience_type', 'all');
+        $rawZoneIds = (array) $request->input('zone_ids', []);
+        $toUsers = (array) $request->input('to_users', ['customer']);
+
+        $hasAllZones = in_array('all', $rawZoneIds, true) || empty($rawZoneIds);
+        $zoneIds = $hasAllZones ? [] : $rawZoneIds;
+
+        $customerCount = 0;
+        $providerCount = 0;
+        $servicemanCount = 0;
+
+        if (in_array('all', $toUsers, true) || in_array('customer', $toUsers, true)) {
+            $customerQuery = User::where('user_type', 'customer')->where('is_active', 1);
+
+            if (!$hasAllZones && !empty($zoneIds)) {
+                $customerQuery->where(function ($sub) use ($zoneIds) {
+                    $sub->whereHas('addresses', function ($aq) use ($zoneIds) {
+                        $aq->whereIn('zone_id', $zoneIds);
+                    })->orWhereDoesntHave('addresses');
+                });
+            }
+
+            if ($audienceType === 'targeted' && !empty($categoryId)) {
+                $subCategoryIds = Category::where('parent_id', $categoryId)->pluck('id')->push($categoryId)->toArray();
+
+                $bookedCustomerIds = Booking::whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $estimatedCustomerIds = DB::table('booking_estimates')
+                    ->whereIn('category_id', $subCategoryIds)
+                    ->orWhereIn('sub_category_id', $subCategoryIds)
+                    ->pluck('customer_id')
+                    ->filter()
+                    ->toArray();
+
+                $targetedIds = array_unique(array_merge($bookedCustomerIds, $estimatedCustomerIds));
+                $customerQuery->whereIn('id', $targetedIds);
+            }
+
+            $customerCount = $customerQuery->count();
+        }
+
+        if (in_array('all', $toUsers, true) || in_array('provider-admin', $toUsers, true)) {
+            $providerCount = Provider::where('is_active', 1)
+                ->when(!$hasAllZones && !empty($zoneIds), fn($q) => $q->whereIn('zone_id', $zoneIds))
+                ->count();
+        }
+
+        if (in_array('all', $toUsers, true) || in_array('provider-serviceman', $toUsers, true)) {
+            $providerIds = Provider::where('is_active', 1)
+                ->when(!$hasAllZones && !empty($zoneIds), fn($q) => $q->whereIn('zone_id', $zoneIds))
+                ->pluck('id')->toArray();
+            $servicemanCount = Serviceman::whereIn('provider_id', $providerIds)->count();
+        }
+
+        $totalReach = $customerCount + $providerCount + $servicemanCount;
+
+        return response()->json([
+            'success' => true,
+            'estimated_reach' => $totalReach,
+            'customer_count' => $customerCount,
+            'provider_count' => $providerCount,
+            'serviceman_count' => $servicemanCount,
+        ]);
+    }
+
+    /**
+     * Web Click Tracking for Push Notifications
+     */
+    public function trackClickWeb(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $notificationId = $request->input('notification_id');
+        if (!empty($notificationId)) {
+            $notif = $this->pushNotification->find($notificationId);
+            if ($notif) {
+                $notif->increment('click_count');
+                return response()->json([
+                    'status' => 'success',
+                    'notification_id' => $notif->id,
+                    'click_count' => $notif->click_count
+                ]);
+            }
+        }
+        return response()->json(['status' => 'error', 'message' => 'Notification not found'], 404);
+    }
+
     private function convertToSystemTimezone(?string $timeString, ?int $userTzOffset = null, string $type = 'datetime'): ?string
     {
         if (empty($timeString)) {

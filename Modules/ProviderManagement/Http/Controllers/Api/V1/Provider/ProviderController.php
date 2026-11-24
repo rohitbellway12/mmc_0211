@@ -581,18 +581,165 @@ class ProviderController extends Controller
             return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
         }
 
-        $createdAt = $request->user()->created_at ?? null;
+        $user = $request->user();
+        $zoneId = $user->provider->zone_id;
+        $createdAt = $user->created_at ?? null;
 
-        $pushNotification = $this->pushNotification->ofStatus(1)
-            ->whereJsonContains('to_users', 'provider-admin')
-            ->whereJsonContains('zone_ids', $request->user()->provider->zone_id)
-            ->when($createdAt, function ($query) use ($createdAt) {
-                $query->where('created_at', '>=', $createdAt);
+        $readIds = DB::table('push_notification_reads')
+            ->where('user_id', $user->id)
+            ->pluck('notification_id')
+            ->toArray();
+
+        $query = $this->pushNotification->ofStatus(1)
+            ->where(function ($q) use ($zoneId) {
+                $q->whereJsonContains('zone_ids', $zoneId)
+                  ->orWhereJsonContains('zone_ids', 'all');
             })
-            ->latest()
-            ->paginate($request['limit'], ['*'], 'offset', $request['offset'])->withPath('');
+            ->where(function ($q) {
+                $q->whereJsonContains('to_users', 'provider-admin')
+                  ->orWhereJsonContains('to_users', 'all');
+            })
+            ->when($createdAt, function ($q) use ($createdAt) {
+                $q->where('created_at', '>=', $createdAt);
+            });
 
-        return response()->json(response_formatter(DEFAULT_200, $pushNotification), 200);
+        $unreadCount = (clone $query)->whereNotIn('id', $readIds)->count();
+
+        $paginated = $query->latest()
+            ->paginate($request['limit'], ['*'], 'offset', $request['offset'])
+            ->withPath('');
+
+        $paginated->getCollection()->transform(function ($item) use ($readIds) {
+            $item->is_read = in_array($item->id, $readIds) ? 1 : 0;
+            $item->on_tap_action = $item->on_tap_action ?? 'general';
+            $item->category_id = $item->category_id ?? null;
+            return $item;
+        });
+
+        $result = $paginated->toArray();
+        $result['unread_count'] = $unreadCount;
+
+        return response()->json(response_formatter(DEFAULT_200, $result), 200);
+    }
+
+    /**
+     * Mark an individual notification as read.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function markNotificationRead(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'notification_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
+        }
+
+        $notificationId = $request->input('notification_id');
+        $user = $request->user();
+
+        DB::table('push_notification_reads')->insertOrIgnore([
+            'user_id' => $user->id,
+            'notification_id' => $notificationId,
+            'read_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        if ($request->input('track_click', false)) {
+            $this->pushNotification->where('id', $notificationId)->increment('click_count');
+        }
+
+        $zoneId = $user->provider->zone_id;
+        $readIds = DB::table('push_notification_reads')->where('user_id', $user->id)->pluck('notification_id')->toArray();
+        $unreadCount = $this->pushNotification->ofStatus(1)
+            ->where(function ($q) use ($zoneId) {
+                $q->whereJsonContains('zone_ids', $zoneId)->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($q) {
+                $q->whereJsonContains('to_users', 'provider-admin')->orWhereJsonContains('to_users', 'all');
+            })
+            ->whereNotIn('id', $readIds)
+            ->count();
+
+        return response()->json(response_formatter(DEFAULT_200, [
+            'notification_id' => $notificationId,
+            'is_read' => 1,
+            'unread_count' => $unreadCount,
+        ]), 200);
+    }
+
+    /**
+     * Mark all notifications as read for the logged-in provider.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function markAllNotificationsRead(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $zoneId = $user->provider->zone_id;
+
+        $notificationIds = $this->pushNotification->ofStatus(1)
+            ->where(function ($q) use ($zoneId) {
+                $q->whereJsonContains('zone_ids', $zoneId)->orWhereJsonContains('zone_ids', 'all');
+            })
+            ->where(function ($q) {
+                $q->whereJsonContains('to_users', 'provider-admin')->orWhereJsonContains('to_users', 'all');
+            })
+            ->pluck('id')
+            ->toArray();
+
+        $records = [];
+        $now = now();
+        foreach ($notificationIds as $id) {
+            $records[] = [
+                'user_id' => $user->id,
+                'notification_id' => $id,
+                'read_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (!empty($records)) {
+            DB::table('push_notification_reads')->insertOrIgnore($records);
+        }
+
+        return response()->json(response_formatter(DEFAULT_200, [
+            'unread_count' => 0,
+            'message' => translate('All notifications marked as read'),
+        ]), 200);
+    }
+
+    /**
+     * Track push notification click / tap from provider mobile app.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function trackClick(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'notification_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(response_formatter(DEFAULT_400, null, error_processor($validator)), 400);
+        }
+
+        $notificationId = $request->input('notification_id');
+        $notif = $this->pushNotification->find($notificationId);
+
+        if ($notif) {
+            $notif->increment('click_count');
+            return response()->json(response_formatter(DEFAULT_200, [
+                'notification_id' => $notif->id,
+                'click_count' => $notif->click_count,
+            ]), 200);
+        }
+
+        return response()->json(response_formatter(DEFAULT_404), 404);
     }
 
     /**
