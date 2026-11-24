@@ -141,6 +141,11 @@
                                                     <span class="material-icons fz-16">request_quote</span>
                                                     <span>{{ translate('Quote') }}</span>
                                                 </a>
+                                                <a href="{{ route('provider.customer.edit', [$customer->id]) }}"
+                                                   class="btn btn-sm btn-light d-flex align-items-center text-primary"
+                                                   title="{{ translate('Edit Client') }}">
+                                                    <span class="material-icons fz-18">edit</span>
+                                                </a>
                                                 <a href="{{ route('provider.customer.detail', [$customer->id]) }}"
                                                    class="btn btn-sm btn-light d-flex align-items-center text-muted"
                                                    title="{{ translate('View Client Details') }}">

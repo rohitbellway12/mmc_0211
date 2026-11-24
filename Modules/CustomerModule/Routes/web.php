@@ -71,6 +71,8 @@ Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => 'Web\P
         Route::get('create', 'CustomerController@create')->name('create');
         Route::post('store', 'CustomerController@store')->name('store');
         Route::get('detail/{id}', 'CustomerController@show')->name('detail');
+        Route::get('edit/{id}', 'CustomerController@edit')->name('edit');
+        Route::put('update/{id}', 'CustomerController@update')->name('update');
     });
 });
 

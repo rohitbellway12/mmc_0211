@@ -55,10 +55,13 @@
                                                             name="to_users[]" id="user_selector__select" multiple="multiple">
                                                         <option value="all">{{translate('all')}}</option>
                                                         <option value="customer" {{in_array('customer',$pushNotification->to_users)?'selected':''}}>
-                                                            {{translate('customer')}}
+                                                            {{translate('customer (Mobile App)')}}
+                                                        </option>
+                                                        <option value="partner-admin" {{in_array('partner-admin',$pushNotification->to_users)?'selected':''}}>
+                                                            {{translate('partner (Workshop / Estimators)')}}
                                                         </option>
                                                         <option value="provider-admin" {{in_array('provider-admin',$pushNotification->to_users)?'selected':''}}>
-                                                            {{translate('provider')}}
+                                                            {{translate('provider (Garages / Mechanics)')}}
                                                         </option>
                                                         <option value="provider-serviceman" {{in_array('provider-serviceman',$pushNotification->to_users)?'selected':''}}>
                                                             {{translate('serviceman')}}
@@ -82,9 +85,22 @@
                                             <div class="col-lg-6">
                                                 <label class="form-label text-dark fz-12 fw-semibold mb-1">{{translate('On-Tap Action (Deep Link)')}}</label>
                                                 <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
-                                                    <option value="general" {{ old('on_tap_action', $pushNotification->on_tap_action ?? 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / General')}}</option>
-                                                    <option value="quote_form" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
-                                                    <option value="service_page" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
+                                                    <option value="general" {{ old('on_tap_action', $pushNotification->on_tap_action ?? 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / Dashboard (All Roles)')}}</option>
+                                                    <optgroup label="📱 {{translate('Customer App Actions')}}" id="edit_page_optgroup_customer">
+                                                        <option value="quote_form" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
+                                                        <option value="service_page" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
+                                                    </optgroup>
+                                                    <optgroup label="🏢 {{translate('Partner Actions')}}" id="edit_page_optgroup_partner">
+                                                        <option value="partner_quotations" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'partner_quotations' ? 'selected' : '' }}>{{translate('Quotations & Estimates List')}}</option>
+                                                        <option value="partner_new_quotation" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'partner_new_quotation' ? 'selected' : '' }}>{{translate('Create New Quotation')}}</option>
+                                                        <option value="partner_customers" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'partner_customers' ? 'selected' : '' }}>{{translate('Customer Management')}}</option>
+                                                        <option value="provider_bookings" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'provider_bookings' ? 'selected' : '' }}>{{translate('Bookings List')}}</option>
+                                                    </optgroup>
+                                                    <optgroup label="🔧 {{translate('Provider Actions')}}" id="edit_page_optgroup_provider">
+                                                        <option value="provider_service_requests" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'provider_service_requests' ? 'selected' : '' }}>{{translate('Service Requests List')}}</option>
+                                                        <option value="provider_services" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'provider_services' ? 'selected' : '' }}>{{translate('Available Services & Subscriptions')}}</option>
+                                                        <option value="provider_bookings" {{ old('on_tap_action', $pushNotification->on_tap_action) == 'provider_bookings' ? 'selected' : '' }}>{{translate('Bookings List')}}</option>
+                                                    </optgroup>
                                                 </select>
                                             </div>
                                         </div>
@@ -215,12 +231,40 @@
     <script>
         "use Strict";
 
+        function updateEditPageActionDropdown() {
+            let users = $('#user_selector__select').val() || [];
+            let isAll = users.includes('all') || users.length === 0;
+
+            let hasCustomer = users.includes('customer') || isAll;
+            let hasPartner = users.includes('partner-admin') || isAll;
+            let hasProvider = users.includes('provider-admin') || isAll;
+
+            if (hasCustomer) {
+                $('#edit_page_optgroup_customer').show().removeAttr('disabled');
+            } else {
+                $('#edit_page_optgroup_customer').hide().attr('disabled', 'disabled');
+            }
+
+            if (hasPartner) {
+                $('#edit_page_optgroup_partner').show().removeAttr('disabled');
+            } else {
+                $('#edit_page_optgroup_partner').hide().attr('disabled', 'disabled');
+            }
+
+            if (hasProvider) {
+                $('#edit_page_optgroup_provider').show().removeAttr('disabled');
+            } else {
+                $('#edit_page_optgroup_provider').hide().attr('disabled', 'disabled');
+            }
+        }
+
         $('#user_selector__select').on('change', function() {
             var selectedValues = $(this).val();
             if (selectedValues !== null && selectedValues.includes('all')) {
                 $(this).find('option').not(':disabled').prop('selected', 'selected');
                 $(this).find('option[value="all"]').prop('selected', false);
             }
+            updateEditPageActionDropdown();
         });
 
         $('#zone_selector__select').on('change', function() {
@@ -247,6 +291,7 @@
             $('.select-user').select2({
                 placeholder: "{{translate('select_users')}}",
             });
+            updateEditPageActionDropdown();
 
             function updateScheduledInputsState() {
                 let isScheduled = $('#send_type_scheduled').is(':checked');

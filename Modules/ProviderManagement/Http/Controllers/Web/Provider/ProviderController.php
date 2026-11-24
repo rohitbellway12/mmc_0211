@@ -134,6 +134,7 @@ class ProviderController extends Controller
             })
             ->where('is_checked', 0)->count();
         $zoneId = $request->user()->provider->zone_id;
+        $isPartner = (int)($request->user()->provider->is_partner ?? 0);
         $readIds = DB::table('push_notification_reads')
             ->where('user_id', $request->user()->id)
             ->pluck('notification_id')
@@ -144,9 +145,12 @@ class ProviderController extends Controller
                 $query->whereJsonContains('zone_ids', $zoneId)
                     ->orWhereJsonContains('zone_ids', 'all');
             })
-            ->where(function ($query) {
-                $query->whereJsonContains('to_users', 'provider-admin')
-                    ->orWhereJsonContains('to_users', 'all');
+            ->where(function ($query) use ($isPartner) {
+                $query->whereJsonContains('to_users', 'all')
+                    ->orWhereJsonContains('to_users', 'provider-admin');
+                if ($isPartner == 1) {
+                    $query->orWhereJsonContains('to_users', 'partner-admin');
+                }
             });
 
         $notificationCount = (clone $notificationQuery)->whereNotIn('id', $readIds)->count();
@@ -204,6 +208,7 @@ class ProviderController extends Controller
         $search = $request->input('search');
         $user = $request->user();
         $zoneId = $user->provider->zone_id;
+        $isPartner = (int)($user->provider->is_partner ?? 0);
 
         $readIds = DB::table('push_notification_reads')
             ->where('user_id', $user->id)
@@ -215,9 +220,12 @@ class ProviderController extends Controller
                 $query->whereJsonContains('zone_ids', $zoneId)
                     ->orWhereJsonContains('zone_ids', 'all');
             })
-            ->where(function ($query) {
-                $query->whereJsonContains('to_users', 'provider-admin')
-                    ->orWhereJsonContains('to_users', 'all');
+            ->where(function ($query) use ($isPartner) {
+                $query->whereJsonContains('to_users', 'all')
+                    ->orWhereJsonContains('to_users', 'provider-admin');
+                if ($isPartner == 1) {
+                    $query->orWhereJsonContains('to_users', 'partner-admin');
+                }
             })
             ->when($search, function ($query) use ($search) {
                 $keys = explode(' ', $search);

@@ -132,7 +132,7 @@ class PushNotificationController extends Controller
             'title' => 'required|string|max:100',
             'description' => 'required|string|max:200',
             'to_users' => 'nullable|array',
-            'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
+            'to_users.*' => 'in:customer,provider-admin,partner-admin,provider-serviceman,all',
             'zone_ids' => 'nullable|array',
             'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:10000',
             'send_type' => 'nullable|in:immediate,scheduled',
@@ -140,7 +140,7 @@ class PushNotificationController extends Controller
             'scheduled_at' => 'nullable',
             'scheduled_time' => 'nullable',
             'category_id' => 'nullable',
-            'on_tap_action' => 'nullable|in:general,quote_form,service_page,offer_page',
+            'on_tap_action' => 'nullable|string',
             'audience_type' => 'nullable|in:all,targeted',
             'estimated_reach' => 'nullable|numeric',
         ]);
@@ -151,6 +151,7 @@ class PushNotificationController extends Controller
 
         $permissionsMap = [
             'customer' => true,
+            'partner-admin' => true,
             'provider-admin' => true,
             'provider-serviceman' => true
         ];
@@ -315,6 +316,7 @@ class PushNotificationController extends Controller
 
         $permissionsMap = [
             'customer' => true,
+            'partner-admin' => true,
             'provider-admin' => true,
             'provider-serviceman' => true
         ];
@@ -404,7 +406,7 @@ class PushNotificationController extends Controller
             'title' => 'required|string|max:100',
             'description' => 'required|max:200',
             'to_users' => 'required|array',
-            'to_users.*' => 'in:customer,provider-admin,provider-serviceman,all',
+            'to_users.*' => 'in:customer,provider-admin,partner-admin,provider-serviceman,all',
             'zone_ids' => 'required|array',
             'cover_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
             'send_type' => 'required|in:immediate,scheduled',
@@ -412,11 +414,7 @@ class PushNotificationController extends Controller
             'scheduled_at' => 'nullable',
             'scheduled_time' => 'nullable',
             'category_id' => 'nullable',
-            'on_tap_action' => 'required|in:general,quote_form,service_page,offer_page',
-            'audience_type' => 'required|in:all,targeted',
-            'estimated_reach' => 'nullable|numeric',
-            'category_id' => 'nullable',
-            'on_tap_action' => 'required|in:general,quote_form,service_page,offer_page',
+            'on_tap_action' => 'required|string',
             'audience_type' => 'required|in:all,targeted',
             'estimated_reach' => 'nullable|numeric',
         ]);
@@ -658,9 +656,30 @@ class PushNotificationController extends Controller
             $tokens = array_merge($tokens, $customerTokens);
         }
 
-        // 2. Providers
+        // 2. Partners (is_partner = 1)
+        if (in_array('partner-admin', $filteredUsers, true)) {
+            $partnerUserIds = Provider::where('is_active', 1)
+                ->where('is_partner', 1)
+                ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
+                    $query->whereIn('zone_id', $zoneIds);
+                })
+                ->pluck('user_id')
+                ->toArray();
+
+            $partnerTokens = User::where('user_type', 'provider-admin')
+                ->whereIn('id', $partnerUserIds)
+                ->whereNotNull('fcm_token')
+                ->where('fcm_token', '!=', '')
+                ->pluck('fcm_token')
+                ->toArray();
+
+            $tokens = array_merge($tokens, $partnerTokens);
+        }
+
+        // 3. Providers (is_partner = 0)
         if (in_array('provider-admin', $filteredUsers, true)) {
             $providerUserIds = Provider::where('is_active', 1)
+                ->where('is_partner', 0)
                 ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
                     $query->whereIn('zone_id', $zoneIds);
                 })
@@ -677,7 +696,7 @@ class PushNotificationController extends Controller
             $tokens = array_merge($tokens, $providerTokens);
         }
 
-        // 3. Servicemen
+        // 4. Servicemen
         if (in_array('provider-serviceman', $filteredUsers, true)) {
             $providerIds = Provider::where('is_active', 1)
                 ->when(!$hasAllZones && !empty($zoneIds), function ($query) use ($zoneIds) {
@@ -729,6 +748,7 @@ class PushNotificationController extends Controller
         $zoneIds = $hasAllZones ? [] : $rawZoneIds;
 
         $customerCount = 0;
+        $partnerCount = 0;
         $providerCount = 0;
         $servicemanCount = 0;
 
@@ -766,8 +786,16 @@ class PushNotificationController extends Controller
             $customerCount = $customerQuery->count();
         }
 
+        if (in_array('all', $toUsers, true) || in_array('partner-admin', $toUsers, true)) {
+            $partnerCount = Provider::where('is_active', 1)
+                ->where('is_partner', 1)
+                ->when(!$hasAllZones && !empty($zoneIds), fn($q) => $q->whereIn('zone_id', $zoneIds))
+                ->count();
+        }
+
         if (in_array('all', $toUsers, true) || in_array('provider-admin', $toUsers, true)) {
             $providerCount = Provider::where('is_active', 1)
+                ->where('is_partner', 0)
                 ->when(!$hasAllZones && !empty($zoneIds), fn($q) => $q->whereIn('zone_id', $zoneIds))
                 ->count();
         }
@@ -779,12 +807,13 @@ class PushNotificationController extends Controller
             $servicemanCount = Serviceman::whereIn('provider_id', $providerIds)->count();
         }
 
-        $totalReach = $customerCount + $providerCount + $servicemanCount;
+        $totalReach = $customerCount + $partnerCount + $providerCount + $servicemanCount;
 
         return response()->json([
             'success' => true,
             'estimated_reach' => $totalReach,
             'customer_count' => $customerCount,
+            'partner_count' => $partnerCount,
             'provider_count' => $providerCount,
             'serviceman_count' => $servicemanCount,
         ]);

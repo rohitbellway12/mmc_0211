@@ -4,11 +4,41 @@
 @forelse($notifications as $notification)
     @php
         $isUnread = !in_array($notification->id, $readIds);
+        $isPartner = (int)(auth()->user()?->provider?->is_partner ?? 0);
+        $action = $notification->on_tap_action ?? 'general';
+
         $targetUrl = route('provider.dashboard');
-        if (($notification->on_tap_action ?? '') === 'quote_form') {
+        $badgeText = null;
+
+        if ($action === 'partner_quotations') {
+            $targetUrl = route('provider.estimate.index');
+            $badgeText = translate('Quotations & Estimates');
+        } elseif ($action === 'partner_new_quotation') {
+            $targetUrl = route('provider.estimate.create');
+            $badgeText = translate('Create Quotation');
+        } elseif ($action === 'partner_customers') {
+            $targetUrl = route('provider.customer.list');
+            $badgeText = translate('Customer Management');
+        } elseif ($action === 'provider_service_requests') {
             $targetUrl = route('provider.service.request-list');
-        } elseif (($notification->on_tap_action ?? '') === 'service_page') {
+            $badgeText = translate('Service Requests');
+        } elseif ($action === 'provider_bookings') {
+            $targetUrl = route('provider.booking.list');
+            $badgeText = translate('Bookings');
+        } elseif ($action === 'service_page' || $action === 'provider_services') {
             $targetUrl = route('provider.service.available');
+            $badgeText = translate('Available Services');
+        } elseif ($action === 'quote_form') {
+            if ($isPartner == 1) {
+                $targetUrl = route('provider.estimate.index');
+                $badgeText = translate('Quotations & Estimates');
+            } else {
+                $targetUrl = route('provider.service.request-list');
+                $badgeText = translate('Service Requests');
+            }
+        } else {
+            $targetUrl = route('provider.dashboard');
+            $badgeText = translate('Dashboard');
         }
     @endphp
     <div class="p-3 border-bottom position-relative notification-row-item {{ $isUnread ? 'bg-light-blue' : '' }}" style="{{ $isUnread ? 'background-color: rgba(13, 110, 253, 0.04);' : '' }}">
@@ -49,10 +79,8 @@
                     @endphp
                     <div class="d-flex justify-content-between align-items-center mt-1">
                         <span class="card-text fz-11 text-muted">{{$time}} {{translate('ago')}}</span>
-                        @if(($notification->on_tap_action ?? '') === 'quote_form')
-                            <span class="badge bg-light text-primary border fz-10 py-1 px-2">{{ translate('View Requests') }}</span>
-                        @elseif(($notification->on_tap_action ?? '') === 'service_page')
-                            <span class="badge bg-light text-primary border fz-10 py-1 px-2">{{ translate('View Services') }}</span>
+                        @if($badgeText)
+                            <span class="badge bg-light text-primary border fz-10 py-1 px-2">{{ $badgeText }}</span>
                         @endif
                     </div>
                 </div>

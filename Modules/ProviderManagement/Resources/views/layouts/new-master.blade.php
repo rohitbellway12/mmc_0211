@@ -896,6 +896,10 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
                     subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_{{ auth()->user()->provider->id }}_booking_message');
                     subscribeTokenToBackend(token, 'provider-admin-{{auth()->user()->provider->zone_id}}');
                     subscribeTokenToBackend(token, 'provider-admin-all');
+                    @if ((auth()->user()?->provider?->is_partner ?? 0) == 1)
+                        subscribeTokenToBackend(token, 'partner-admin-{{ auth()->user()->provider->zone_id }}');
+                        subscribeTokenToBackend(token, 'partner-admin-all');
+                    @endif
                     @if($serviceAtProviderPlace)
                         @if(in_array('customer', $serviceLocations))
                             subscribeTokenToBackend(token, 'demandium_provider_{{auth()->user()->provider->zone_id}}_customer_booking_message');
@@ -983,22 +987,40 @@ $serviceLocations = getProviderSettings(providerId: auth()->user()->provider->id
                         } else {
                             let imgHtml = image ? `<div class="mb-3 text-center"><img src="${image}" class="img-fluid rounded" style="max-height: 180px;" alt=""></div>` : '';
                             
-                            let targetUrl = null;
-                            let confirmBtnText = '{{translate('OK')}}';
-                            let showCancel = false;
+                            let isPartner = {{ (auth()->user()?->provider?->is_partner ?? 0) == 1 ? 'true' : 'false' }};
+                            let targetUrl = "{{ route('provider.dashboard') }}";
+                            let confirmBtnText = '{{ translate('Go to Dashboard') }}';
+                            let showCancel = true;
 
-                            if (actionType === 'quote_form' || notifType === 'service_request' || notifType === 'service_request_message') {
+                            if (actionType === 'partner_quotations') {
+                                targetUrl = "{{ route('provider.estimate.index') }}";
+                                confirmBtnText = '{{ translate('View Quotations') }}';
+                            } else if (actionType === 'partner_new_quotation') {
+                                targetUrl = "{{ route('provider.estimate.create') }}";
+                                confirmBtnText = '{{ translate('Create Quotation') }}';
+                            } else if (actionType === 'partner_customers') {
+                                targetUrl = "{{ route('provider.customer.list') }}";
+                                confirmBtnText = '{{ translate('View Customers') }}';
+                            } else if (actionType === 'provider_service_requests' || notifType === 'service_request' || notifType === 'service_request_message') {
                                 targetUrl = "{{ route('provider.service.request-list') }}";
-                                confirmBtnText = '{{translate('View Service Requests')}}';
-                                showCancel = true;
-                            } else if (actionType === 'service_page') {
+                                confirmBtnText = '{{ translate('View Service Requests') }}';
+                            } else if (actionType === 'provider_bookings' || notifType === 'booking') {
+                                targetUrl = "{{ route('provider.booking.list') }}?booking_status=all";
+                                confirmBtnText = '{{ translate('View Bookings') }}';
+                            } else if (actionType === 'service_page' || actionType === 'provider_services') {
                                 targetUrl = "{{ route('provider.service.available') }}";
-                                confirmBtnText = '{{translate('View Services')}}';
-                                showCancel = true;
+                                confirmBtnText = '{{ translate('View Services') }}';
+                            } else if (actionType === 'quote_form') {
+                                if (isPartner) {
+                                    targetUrl = "{{ route('provider.estimate.index') }}";
+                                    confirmBtnText = '{{ translate('View Quotations') }}';
+                                } else {
+                                    targetUrl = "{{ route('provider.service.request-list') }}";
+                                    confirmBtnText = '{{ translate('View Service Requests') }}';
+                                }
                             } else {
-                                targetUrl = null;
-                                confirmBtnText = '{{translate('OK')}}';
-                                showCancel = false;
+                                targetUrl = "{{ route('provider.dashboard') }}";
+                                confirmBtnText = '{{ translate('Go to Dashboard') }}';
                             }
 
                             Swal.fire({

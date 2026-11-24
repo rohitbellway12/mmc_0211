@@ -203,49 +203,6 @@
                                             </select>
                                         </div>
                                     </div>
-
-                                    {{-- Date of Birth --}}
-                                    <div class="col-sm-6">
-                                        <div class="form-group">
-                                            <label class="form-label" for="date_of_birth">
-                                                {{ translate('Date_of_Birth') }}
-                                            </label>
-                                            <input type="date" class="form-control" name="date_of_birth" id="date_of_birth"
-                                                   value="{{ old('date_of_birth') }}">
-                                        </div>
-                                    </div>
-
-                                    {{-- Password --}}
-                                    <div class="col-sm-6">
-                                        <div class="form-group">
-                                            <label class="form-label" for="password">
-                                                {{ translate('Password') }} <span class="text-danger">*</span>
-                                            </label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control border-end-0" name="password" id="password"
-                                                       placeholder="{{ translate('Min 6 characters') }}" required minlength="6">
-                                                <span class="input-group-text bg-white border-start-0 cursor-pointer text-muted toggle-password" data-target="#password" style="cursor: pointer;">
-                                                    <span class="material-icons fz-18">visibility</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Confirm Password --}}
-                                    <div class="col-sm-6">
-                                        <div class="form-group">
-                                            <label class="form-label" for="confirm_password">
-                                                {{ translate('Confirm_Password') }}
-                                            </label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control border-end-0" name="confirm_password" id="confirm_password"
-                                                       placeholder="{{ translate('Repeat password') }}" minlength="6">
-                                                <span class="input-group-text bg-white border-start-0 cursor-pointer text-muted toggle-password" data-target="#confirm_password" style="cursor: pointer;">
-                                                    <span class="material-icons fz-18">visibility</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -328,6 +285,52 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Customer Uploaded Documents Card --}}
+                        @if(isset($documentTypes) && $documentTypes->count() > 0)
+                            <div class="card customer-form-card shadow-sm mb-4">
+                                <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                                    <h4 class="card-title mb-0 d-flex align-items-center gap-2 fz-16 fw-bold text-dark">
+                                        <span class="material-icons text-primary">folder_shared</span>
+                                        {{ translate('Customer_Documents') }}
+                                    </h4>
+                                    <span class="badge bg-light text-muted fz-12">
+                                        {{ $documentTypes->count() }} {{ translate('Documents Setup') }}
+                                    </span>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        @foreach($documentTypes as $docType)
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3 h-100 bg-light">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <label class="form-label fw-bold mb-0 text-dark">
+                                                            {{ $docType->title }}
+                                                            @if($docType->is_required)
+                                                                <span class="text-danger">* ({{ translate('Required') }})</span>
+                                                            @endif
+                                                        </label>
+                                                    </div>
+                                                    @if(!empty($docType->description))
+                                                        <small class="text-muted d-block mb-2">{{ $docType->description }}</small>
+                                                    @endif
+                                                    <div class="mt-2">
+                                                        <input type="file" 
+                                                               class="form-control" 
+                                                               name="documents[{{ $docType->id }}]" 
+                                                               accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx"
+                                                               {{ $docType->is_required ? 'required' : '' }}>
+                                                        <div class="form-text fs-12 text-muted mt-1">
+                                                            {{ translate('Formats: JPG, PNG, WEBP, PDF, DOC (Max 15MB)') }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Right Column: Profile Image & Actions --}}

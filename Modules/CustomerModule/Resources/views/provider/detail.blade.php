@@ -41,6 +41,10 @@
                     <p class="text-muted fz-14 mb-0">{{ translate('Client details, saved addresses and history of bookings & quotations.') }}</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="{{ route('provider.customer.edit', [$customer->id]) }}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                        <span class="material-icons">edit</span>
+                        {{ translate('Edit_Customer') }}
+                    </a>
                     <a href="{{ route('provider.estimate.create', ['customer_id' => $customer->id]) }}" class="btn btn--primary d-flex align-items-center gap-2">
                         <span class="material-icons">request_quote</span>
                         {{ translate('Create_Quotation') }}

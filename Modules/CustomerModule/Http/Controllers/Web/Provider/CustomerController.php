@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Validator;
 use Modules\BookingModule\Entities\Booking;
 use Modules\BookingModule\Entities\BookingEstimate;
 use Modules\CustomerModule\Emails\CustomerRegistrationMail;
+use Modules\CustomerModule\Entities\CustomerDocument;
+use Modules\CustomerModule\Entities\CustomerDocumentType;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\UserAddress;
 use Modules\UserManagement\Entities\UserVerification;
@@ -91,7 +93,8 @@ class CustomerController extends Controller
      */
     public function create(Request $request): View|Factory|Application
     {
-        return view('customermodule::provider.create');
+        $documentTypes = CustomerDocumentType::where('is_active', 1)->latest()->get();
+        return view('customermodule::provider.create', compact('documentTypes'));
     }
 
     /**
@@ -106,10 +109,11 @@ class CustomerController extends Controller
             'last_name' => 'required|string|max:191',
             'email' => 'required|email|max:191|unique:users,email',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:20|unique:users,phone',
-            'password' => 'required|min:6',
+            'password' => 'nullable|min:6',
             'confirm_password' => 'nullable|same:password',
             'gender' => 'nullable|in:male,female,others',
             'profile_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
+            'documents.*' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf,doc,docx|max:15000',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
             'zip_code' => 'nullable|string|max:20',
@@ -135,7 +139,7 @@ class CustomerController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        $password = $request->password;
+        $password = $request->filled('password') ? $request->password : '12345678';
 
         $user = new User();
         $user->first_name = $request->first_name;
@@ -152,6 +156,21 @@ class CustomerController extends Controller
         $user->is_active = 1;
         $user->referred_by = $request->user()->id; // Track that partner created this customer
         $user->save();
+
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $docTypeId => $file) {
+                if ($file && $file->isValid()) {
+                    $extension = $file->getClientOriginalExtension();
+                    $storedName = file_uploader('customer/document/', $extension, $file);
+                    CustomerDocument::create([
+                        'user_id' => $user->id,
+                        'document_type_id' => $docTypeId,
+                        'file_path' => $storedName,
+                        'file_name' => $file->getClientOriginalName(),
+                    ]);
+                }
+            }
+        }
 
         // Save address if provided
         $savedAddress = null;
@@ -281,5 +300,120 @@ class CustomerController extends Controller
             'estimates',
             'bookings'
         ));
+    }
+
+    /**
+     * Show the form for editing the customer.
+     * @param string $id
+     * @param Request $request
+     * @return Application|Factory|View
+     */
+    public function edit(string $id, Request $request): View|Factory|Application
+    {
+        $customer = $this->user->where('id', $id)
+            ->whereIn('user_type', CUSTOMER_USER_TYPES)
+            ->with(['addresses', 'documents.documentType'])
+            ->firstOrFail();
+
+        $documentTypes = CustomerDocumentType::where('is_active', 1)->latest()->get();
+
+        return view('customermodule::provider.edit', compact('customer', 'documentTypes'));
+    }
+
+    /**
+     * Update the customer details.
+     * @param string $id
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function update(string $id, Request $request): RedirectResponse
+    {
+        $customer = $this->user->where('id', $id)
+            ->whereIn('user_type', CUSTOMER_USER_TYPES)
+            ->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:191',
+            'last_name' => 'required|string|max:191',
+            'email' => 'required|email|max:191|unique:users,email,' . $customer->id,
+            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:20|unique:users,phone,' . $customer->id,
+            'gender' => 'nullable|in:male,female,others',
+            'profile_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10000',
+            'documents.*' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf,doc,docx|max:15000',
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:100',
+            'house' => 'nullable|string|max:100',
+            'floor' => 'nullable|string|max:100',
+            'street' => 'nullable|string|max:100',
+        ], [
+            'email.unique' => translate('Email already taken'),
+            'phone.unique' => translate('Phone already taken'),
+        ]);
+
+        if ($validator->fails()) {
+            Toastr::error($validator->errors()->first());
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $customer->first_name = $request->first_name;
+        $customer->last_name = $request->last_name;
+        $customer->email = $request->email;
+        $customer->phone = $request->phone;
+        if ($request->hasFile('profile_image')) {
+            $customer->profile_image = file_uploader('user/profile_image/', 'png', $request->file('profile_image'));
+        }
+        $customer->date_of_birth = $request->date_of_birth;
+        $customer->gender = $request->gender ?? $customer->gender;
+        $customer->save();
+
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $docTypeId => $file) {
+                if ($file && $file->isValid()) {
+                    $extension = $file->getClientOriginalExtension();
+                    $storedName = file_uploader('customer/document/', $extension, $file);
+                    CustomerDocument::updateOrCreate(
+                        [
+                            'user_id' => $customer->id,
+                            'document_type_id' => $docTypeId,
+                        ],
+                        [
+                            'file_path' => $storedName,
+                            'file_name' => $file->getClientOriginalName(),
+                        ]
+                    );
+                }
+            }
+        }
+
+        if ($request->filled('address') || $request->filled('city') || $request->filled('street') || $request->filled('zip_code')) {
+            $formattedAddress = $request->address;
+            if (empty($formattedAddress)) {
+                $parts = array_filter([$request->house, $request->floor, $request->street, $request->city, $request->zip_code, $request->country]);
+                $formattedAddress = implode(', ', $parts);
+            }
+
+            $userAddress = UserAddress::where('user_id', $customer->id)->first();
+            if (!$userAddress) {
+                $userAddress = new UserAddress();
+                $userAddress->user_id = $customer->id;
+            }
+            $userAddress->address = $formattedAddress;
+            $userAddress->city = $request->city;
+            $userAddress->street = $request->street;
+            $userAddress->zip_code = $request->zip_code;
+            $userAddress->country = $request->country ?? 'UK';
+            $userAddress->house = $request->house;
+            $userAddress->floor = $request->floor;
+            $userAddress->address_label = $request->address_label ?? 'Service Address';
+            $userAddress->address_type = 'service';
+            $userAddress->contact_person_name = $customer->first_name . ' ' . $customer->last_name;
+            $userAddress->contact_person_number = $customer->phone;
+            $userAddress->save();
+        }
+
+        Toastr::success(translate('Customer details updated successfully'));
+        return redirect()->route('provider.customer.detail', [$customer->id]);
     }
 }

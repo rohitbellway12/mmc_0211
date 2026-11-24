@@ -52,14 +52,61 @@
                                 @foreach($notifications as $notification)
                                     @php
                                         $isUnread = !in_array($notification->id, $readIds);
+                                        $isPartner = (int)(auth()->user()?->provider?->is_partner ?? 0);
+                                        $action = $notification->on_tap_action ?? 'general';
+
                                         $targetUrl = route('provider.dashboard');
                                         $actionBadge = null;
-                                        if (($notification->on_tap_action ?? '') === 'quote_form') {
+                                        $buttonText = translate('Open Dashboard');
+                                        $buttonIcon = 'dashboard';
+
+                                        if ($action === 'partner_quotations') {
+                                            $targetUrl = route('provider.estimate.index');
+                                            $actionBadge = translate('Quotations & Estimates');
+                                            $buttonText = translate('View Quotations');
+                                            $buttonIcon = 'request_quote';
+                                        } elseif ($action === 'partner_new_quotation') {
+                                            $targetUrl = route('provider.estimate.create');
+                                            $actionBadge = translate('Create Quotation');
+                                            $buttonText = translate('Create Quotation');
+                                            $buttonIcon = 'add_circle';
+                                        } elseif ($action === 'partner_customers') {
+                                            $targetUrl = route('provider.customer.list');
+                                            $actionBadge = translate('Customer Management');
+                                            $buttonText = translate('View Customers');
+                                            $buttonIcon = 'people';
+                                        } elseif ($action === 'provider_service_requests') {
                                             $targetUrl = route('provider.service.request-list');
-                                            $actionBadge = translate('Quote Form / Service Requests');
-                                        } elseif (($notification->on_tap_action ?? '') === 'service_page') {
+                                            $actionBadge = translate('Service Requests');
+                                            $buttonText = translate('View Service Requests');
+                                            $buttonIcon = 'list';
+                                        } elseif ($action === 'provider_bookings') {
+                                            $targetUrl = route('provider.booking.list');
+                                            $actionBadge = translate('Bookings');
+                                            $buttonText = translate('View Bookings');
+                                            $buttonIcon = 'calendar_month';
+                                        } elseif ($action === 'service_page' || $action === 'provider_services') {
                                             $targetUrl = route('provider.service.available');
                                             $actionBadge = translate('Available Services');
+                                            $buttonText = translate('View Services');
+                                            $buttonIcon = 'home_repair_service';
+                                        } elseif ($action === 'quote_form') {
+                                            if ($isPartner == 1) {
+                                                $targetUrl = route('provider.estimate.index');
+                                                $actionBadge = translate('Quotations & Estimates');
+                                                $buttonText = translate('View Quotations');
+                                                $buttonIcon = 'request_quote';
+                                            } else {
+                                                $targetUrl = route('provider.service.request-list');
+                                                $actionBadge = translate('Service Requests');
+                                                $buttonText = translate('View Service Requests');
+                                                $buttonIcon = 'list';
+                                            }
+                                        } else {
+                                            $targetUrl = route('provider.dashboard');
+                                            $actionBadge = translate('Dashboard');
+                                            $buttonText = translate('Open Dashboard');
+                                            $buttonIcon = 'dashboard';
                                         }
                                     @endphp
                                     <div class="list-group-item p-3 p-md-4 border-bottom {{ $loop->last ? 'border-bottom-0' : '' }} notification-row-item {{ $isUnread ? 'bg-light' : '' }}" style="{{ $isUnread ? 'background-color: rgba(13, 110, 253, 0.04);' : '' }}">
@@ -118,19 +165,9 @@
                                                             </button>
                                                         @endif
 
-                                                        @if(($notification->on_tap_action ?? '') === 'quote_form')
-                                                            <a href="{{ $targetUrl }}" class="btn btn-sm btn--primary provider-notif-item" data-notif-id="{{ $notification->id }}">
-                                                                <span class="material-icons fz-14 align-middle">visibility</span> {{ translate('View Service Requests') }}
-                                                            </a>
-                                                        @elseif(($notification->on_tap_action ?? '') === 'service_page')
-                                                            <a href="{{ $targetUrl }}" class="btn btn-sm btn--primary provider-notif-item" data-notif-id="{{ $notification->id }}">
-                                                                <span class="material-icons fz-14 align-middle">visibility</span> {{ translate('View Services') }}
-                                                            </a>
-                                                        @else
-                                                            <a href="{{ route('provider.dashboard') }}" class="btn btn-sm btn-outline-primary provider-notif-item" data-notif-id="{{ $notification->id }}">
-                                                                <span class="material-icons fz-14 align-middle">dashboard</span> {{ translate('Open Dashboard') }}
-                                                            </a>
-                                                        @endif
+                                                        <a href="{{ $targetUrl }}" class="btn btn-sm btn--primary provider-notif-item" data-notif-id="{{ $notification->id }}">
+                                                            <span class="material-icons fz-14 align-middle">{{ $buttonIcon }}</span> {{ $buttonText }}
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>

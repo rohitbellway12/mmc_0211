@@ -257,56 +257,12 @@
                                                 </div>
                                             </div>
 
-                                            {{-- STEP 3: Service Campaign & Deep Link Action --}}
-                                            <div class="card border mb-20 shadow-none">
-                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
-                                                    <div>
-                                                        <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
-                                                            <span class="material-icons fz-18 text-primary">touch_app</span>
-                                                            3. {{ translate('Service Campaign & Action (Deep Link)') }}
-                                                        </h4>
-                                                    </div>
-                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Optional') }}</span>
-                                                </div>
-                                                <div class="card-body p-20 bg-white">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
-                                                                {{translate('Service Category')}}
-                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Optional') }}</span>
-                                                            </label>
-                                                            <select class="form-select theme-input-style w-100" name="category_id" id="category_selector__select">
-                                                                <option value="">-- {{translate('No Service (General Broadcast)')}} --</option>
-                                                                @foreach($categories as $cat)
-                                                                    <option value="{{$cat->id}}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{$cat->name}}</option>
-                                                                @endforeach
-                                                            </select>
-                                                            <div class="fz-11 text-muted mt-1">{{ translate('e.g. SMART Repair, Alloy Refurbishment, Car Hire') }}</div>
-                                                        </div>
-
-                                                        <div class="col-md-6">
-                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
-                                                                {{translate('On-Tap Action (Screen to Open)')}}
-                                                            </label>
-                                                            <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
-                                                                <option value="general" {{ old('on_tap_action', 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / General')}}</option>
-                                                                <option value="quote_form" {{ old('on_tap_action') == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form')}}</option>
-                                                                <option value="service_page" {{ old('on_tap_action') == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
-                                                            </select>
-                                                            <div class="fz-11 text-primary mt-1 fw-medium" id="on_tap_action_hint">
-                                                                <span class="material-icons fz-12 align-middle">info</span> {{ translate('Customer taps notification to open MMC App.') }}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {{-- STEP 4: Audience & Area --}}
+                                            {{-- STEP 3: Audience & Area --}}
                                             <div class="card border mb-20 shadow-none">
                                                 <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
                                                     <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
                                                         <span class="material-icons fz-18 text-primary">groups</span>
-                                                        4. {{ translate('Audience & Location') }}
+                                                        3. {{ translate('Audience & Location') }}
                                                     </h4>
                                                     <span class="badge bg-light text-muted border fz-10">{{ translate('Optional Defaults') }}</span>
                                                 </div>
@@ -330,13 +286,14 @@
                                                         <div class="col-md-6">
                                                             <label class="form-label text-dark fz-12 fw-semibold mb-1">
                                                                 {{translate('Target User Group')}}
-                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Defaults to Customer') }}</span>
+                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Select Audience') }}</span>
                                                             </label>
                                                             <div class="position-relative">
                                                                 <select class="select-user theme-input-style w-100" name="to_users[]" id="user_selector__select" multiple="multiple">
                                                                     <option value="all" {{ collect(old('to_users'))->contains('all') ? 'selected' : '' }}>{{translate('All Users')}}</option>
-                                                                    <option value="customer" {{ collect(old('to_users', ['customer']))->contains('customer') ? 'selected' : '' }}>{{translate('Customers')}}</option>
-                                                                    <option value="provider-admin" {{ collect(old('to_users'))->contains('provider-admin') ? 'selected' : '' }}>{{translate('Providers')}}</option>
+                                                                    <option value="customer" {{ collect(old('to_users', ['customer']))->contains('customer') ? 'selected' : '' }}>{{translate('Customers (Mobile App)')}}</option>
+                                                                    <option value="partner-admin" {{ collect(old('to_users'))->contains('partner-admin') ? 'selected' : '' }}>{{translate('Partners (Workshops / Estimators)')}}</option>
+                                                                    <option value="provider-admin" {{ collect(old('to_users'))->contains('provider-admin') ? 'selected' : '' }}>{{translate('Providers (Garages / Mechanics)')}}</option>
                                                                     <option value="provider-serviceman" {{ collect(old('to_users'))->contains('provider-serviceman') ? 'selected' : '' }}>{{translate('Servicemen')}}</option>
                                                                 </select>
                                                             </div>
@@ -387,6 +344,66 @@
                                                                 </span>
                                                                 <input type="hidden" name="estimated_reach" id="estimated_reach_input" value="0">
                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- STEP 4: Destination & Action (Deep Link) --}}
+                                            <div class="card border mb-20 shadow-none">
+                                                <div class="card-header bg-white py-12 px-20 border-bottom d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <h4 class="text-dark fz-14 fw-semibold mb-0 d-flex align-items-center gap-2">
+                                                            <span class="material-icons fz-18 text-primary">touch_app</span>
+                                                            4. {{ translate('Destination & Action (Deep Link)') }}
+                                                        </h4>
+                                                    </div>
+                                                    <span class="badge bg-light text-muted border fz-10">{{ translate('Optional') }}</span>
+                                                </div>
+                                                <div class="card-body p-20 bg-white">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
+                                                                {{translate('On-Tap Action (Screen to Open)')}}
+                                                            </label>
+                                                            <select class="form-select theme-input-style w-100" name="on_tap_action" id="on_tap_action__select">
+                                                                <option value="general" {{ old('on_tap_action', 'general') == 'general' ? 'selected' : '' }}>{{translate('Open App Home / Dashboard (All Roles)')}}</option>
+                                                                
+                                                                <optgroup label="📱 {{translate('Customer App Actions')}}" id="optgroup_customer">
+                                                                    <option value="quote_form" {{ old('on_tap_action') == 'quote_form' ? 'selected' : '' }}>{{translate('Open Quote Request Form (Customer App)')}}</option>
+                                                                    <option value="service_page" {{ old('on_tap_action') == 'service_page' ? 'selected' : '' }}>{{translate('Open Service Details Page')}}</option>
+                                                                </optgroup>
+                                                                
+                                                                <optgroup label="🏢 {{translate('Partner Actions')}}" id="optgroup_partner">
+                                                                    <option value="partner_quotations" {{ old('on_tap_action') == 'partner_quotations' ? 'selected' : '' }}>{{translate('Quotations & Estimates List')}}</option>
+                                                                    <option value="partner_new_quotation" {{ old('on_tap_action') == 'partner_new_quotation' ? 'selected' : '' }}>{{translate('Create New Quotation')}}</option>
+                                                                    <option value="partner_customers" {{ old('on_tap_action') == 'partner_customers' ? 'selected' : '' }}>{{translate('Customer Management / Add Customer')}}</option>
+                                                                    <option value="provider_bookings" {{ old('on_tap_action') == 'provider_bookings' ? 'selected' : '' }}>{{translate('Bookings List')}}</option>
+                                                                </optgroup>
+                                                                
+                                                                <optgroup label="🔧 {{translate('Provider Actions')}}" id="optgroup_provider">
+                                                                    <option value="provider_service_requests" {{ old('on_tap_action') == 'provider_service_requests' ? 'selected' : '' }}>{{translate('Service Requests List')}}</option>
+                                                                    <option value="provider_services" {{ old('on_tap_action') == 'provider_services' ? 'selected' : '' }}>{{translate('Available Services & Subscriptions')}}</option>
+                                                                    <option value="provider_bookings" {{ old('on_tap_action') == 'provider_bookings' ? 'selected' : '' }}>{{translate('Bookings List')}}</option>
+                                                                </optgroup>
+                                                            </select>
+                                                            <div class="fz-11 text-primary mt-1 fw-medium" id="on_tap_action_hint">
+                                                                <span class="material-icons fz-12 align-middle">info</span> {{ translate('Select target screen to open when user clicks notification.') }}
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label text-dark fz-13 fw-semibold mb-1">
+                                                                {{translate('Service Category')}}
+                                                                <span class="badge bg-light text-muted border fz-10 ms-1">{{ translate('Optional') }}</span>
+                                                            </label>
+                                                            <select class="form-select theme-input-style w-100" name="category_id" id="category_selector__select">
+                                                                <option value="">-- {{translate('No Service (General Broadcast)')}} --</option>
+                                                                @foreach($categories as $cat)
+                                                                    <option value="{{$cat->id}}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{$cat->name}}</option>
+                                                                @endforeach
+                                                            </select>
+                                                            <div class="fz-11 text-muted mt-1">{{ translate('e.g. SMART Repair, Alloy Refurbishment, Car Hire') }}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1002,6 +1019,7 @@
                                         <select class="select-users position-relative theme-input-style w-100" name="to_users[]" id="edit_to_users" multiple="multiple">
                                             <option value="all">{{translate('all')}}</option>
                                             <option value="customer">{{translate('customer')}}</option>
+                                            <option value="partner-admin">{{translate('partner')}}</option>
                                             <option value="provider-admin">{{translate('provider')}}</option>
                                             <option value="provider-serviceman">{{translate('serviceman')}}</option>
                                         </select>
@@ -1023,9 +1041,22 @@
                                 <div class="mb-20">
                                     <div class="mb-2 text-dark d-flex align-items-center gap-1">{{translate('On-Tap Action')}}</div>
                                     <select class="form-select theme-input-style w-100" name="on_tap_action" id="edit_on_tap_action">
-                                        <option value="general">{{translate('Open App Home / General')}}</option>
-                                        <option value="quote_form">{{translate('Open Quote Request Form')}}</option>
-                                        <option value="service_page">{{translate('Open Service Details Page')}}</option>
+                                        <option value="general">{{translate('Open App Home / Dashboard (All Roles)')}}</option>
+                                        <optgroup label="📱 {{translate('Customer App Actions')}}" id="edit_optgroup_customer">
+                                            <option value="quote_form">{{translate('Open Quote Request Form')}}</option>
+                                            <option value="service_page">{{translate('Open Service Details Page')}}</option>
+                                        </optgroup>
+                                        <optgroup label="🏢 {{translate('Partner Actions')}}" id="edit_optgroup_partner">
+                                            <option value="partner_quotations">{{translate('Quotations & Estimates List')}}</option>
+                                            <option value="partner_new_quotation">{{translate('Create New Quotation')}}</option>
+                                            <option value="partner_customers">{{translate('Customer Management')}}</option>
+                                            <option value="provider_bookings">{{translate('Bookings List')}}</option>
+                                        </optgroup>
+                                        <optgroup label="🔧 {{translate('Provider Actions')}}" id="edit_optgroup_provider">
+                                            <option value="provider_service_requests">{{translate('Service Requests List')}}</option>
+                                            <option value="provider_services">{{translate('Available Services & Subscriptions')}}</option>
+                                            <option value="provider_bookings">{{translate('Bookings List')}}</option>
+                                        </optgroup>
                                     </select>
                                 </div>
 
@@ -1159,6 +1190,7 @@
                             $('#estimated_reach_display').text(res.estimated_reach);
                             $('#estimated_reach_input').val(res.estimated_reach);
                             let breakdown = `${res.customer_count} Customers`;
+                            if (res.partner_count > 0) breakdown += `, ${res.partner_count} Partners`;
                             if (res.provider_count > 0) breakdown += `, ${res.provider_count} Providers`;
                             if (res.serviceman_count > 0) breakdown += `, ${res.serviceman_count} Servicemen`;
                             $('#reach_breakdown_display').text(breakdown);
@@ -1209,12 +1241,116 @@
                     tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Details") }}' : '{{ translate("Tap opens Service Page") }}';
                 } else if (actionVal === 'offer_page') {
                     tagText = '{{ translate("Tap opens Offers & Deals") }}';
+                } else if (actionVal === 'partner_quotations') {
+                    tagText = '{{ translate("Opens Quotations & Estimates") }}';
+                } else if (actionVal === 'partner_new_quotation') {
+                    tagText = '{{ translate("Opens Create New Quotation") }}';
+                } else if (actionVal === 'partner_customers') {
+                    tagText = '{{ translate("Opens Customer Management") }}';
+                } else if (actionVal === 'provider_service_requests') {
+                    tagText = '{{ translate("Opens Provider Service Requests") }}';
+                } else if (actionVal === 'provider_services') {
+                    tagText = '{{ translate("Opens Available Services") }}';
+                } else if (actionVal === 'provider_bookings') {
+                    tagText = '{{ translate("Opens Bookings List") }}';
                 }
                 $('#preview_notif_action_text').text(tagText);
             }
 
-            $('#category_selector__select, #on_tap_action__select').on('change', updatePreviewActionTag);
-            updatePreviewActionTag();
+            function updateActionDropdown() {
+                let users = $('#user_selector__select').val() || [];
+                let isAll = users.includes('all') || users.length === 0;
+
+                let hasCustomer = users.includes('customer') || isAll;
+                let hasPartner = users.includes('partner-admin') || isAll;
+                let hasProvider = users.includes('provider-admin') || isAll;
+
+                // Show/hide and enable/disable optgroups according to selected audience
+                if (hasCustomer) {
+                    $('#optgroup_customer').show().removeAttr('disabled');
+                } else {
+                    $('#optgroup_customer').hide().attr('disabled', 'disabled');
+                }
+
+                if (hasPartner) {
+                    $('#optgroup_partner').show().removeAttr('disabled');
+                } else {
+                    $('#optgroup_partner').hide().attr('disabled', 'disabled');
+                }
+
+                if (hasProvider) {
+                    $('#optgroup_provider').show().removeAttr('disabled');
+                } else {
+                    $('#optgroup_provider').hide().attr('disabled', 'disabled');
+                }
+
+                // If currently selected option is in a hidden or disabled optgroup, reset to an appropriate option
+                let selectedOpt = $('#on_tap_action__select option:selected');
+                let parentGroup = selectedOpt.parent('optgroup');
+                if (parentGroup.length && (parentGroup.is(':disabled') || parentGroup.css('display') === 'none')) {
+                    if (users.length === 1 && users[0] === 'partner-admin') {
+                        $('#on_tap_action__select').val('partner_quotations');
+                    } else if (users.length === 1 && users[0] === 'provider-admin') {
+                        $('#on_tap_action__select').val('provider_service_requests');
+                    } else if (users.length === 1 && users[0] === 'customer') {
+                        $('#on_tap_action__select').val('quote_form');
+                    } else {
+                        $('#on_tap_action__select').val('general');
+                    }
+                }
+
+                updateAudienceHints();
+                updatePreviewActionTag();
+                toggleAudienceFilterVisibility();
+            }
+
+            function updateAudienceHints() {
+                let users = $('#user_selector__select').val() || [];
+                if (users.length === 1 && users[0] === 'partner-admin') {
+                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Partner will receive notification linking to Quotations, Customers, or Dashboard.") }}');
+                } else if (users.length === 1 && users[0] === 'provider-admin') {
+                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Provider will receive notification linking to Service Requests, Services, or Dashboard.") }}');
+                } else if (users.length === 1 && users[0] === 'customer') {
+                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Customer taps notification to open MMC Mobile App.") }}');
+                } else {
+                    $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> {{ translate("Select target screen to open when user clicks notification.") }}');
+                }
+            }
+
+            function toggleAudienceFilterVisibility() {
+                let catVal = $('#category_selector__select').val();
+                let catText = $('#category_selector__select option:selected').text();
+                let users = $('#user_selector__select').val() || [];
+                let hasCustomer = users.includes('customer') || users.includes('all') || users.length === 0;
+
+                if (catVal && catVal.trim() !== '' && hasCustomer) {
+                    $('#audience_targeting_filter_wrapper').slideDown(200);
+                    $('#targeted_service_label_text').text('{{ translate("Only customers who previously booked or requested quotes for") }} ' + catText.trim());
+                } else {
+                    $('#audience_targeting_filter_wrapper').slideUp(200);
+                    $('#audience_all').prop('checked', true);
+                }
+            }
+
+            $('#category_selector__select').on('change', function () {
+                toggleAudienceFilterVisibility();
+                updatePreviewActionTag();
+            });
+
+            $('#on_tap_action__select').on('change', updatePreviewActionTag);
+            $('#user_selector__select').on('change', updateActionDropdown);
+
+            // Character counters
+            $(document).on('input', '#notif_title_input', function () {
+                $('.title-count').text($(this).val().length + '/100');
+            });
+            $(document).on('input', '#notif_desc_input', function () {
+                $('.desc-count').text($(this).val().length + '/200');
+            });
+
+            // Initial calls
+            updateActionDropdown();
+            toggleAudienceFilterVisibility();
 
             $(document).on('change', '#category_selector__select, input[name="audience_type"], #zone_selector__select4, #user_selector__select', function () {
                 calculateEstimatedReach();
@@ -1222,6 +1358,7 @@
 
             // Initial reach calculation on page load
             setTimeout(calculateEstimatedReach, 500);
+
             // Initialize Select2 with placeholders
             $('.js-select').select2({
                 placeholder: "{{ translate('select_items') }}",
@@ -1261,6 +1398,27 @@
 
                     $(this).val(allOptions).trigger('change');
                 }
+            });
+
+            $('form#push_notification_create_form').on('reset', function () {
+                setTimeout(function () {
+                    $('#zone_selector__select4').val(['all']).trigger('change');
+                    $('#user_selector__select').val(['customer']).trigger('change');
+                    $('#category_selector__select').val('').trigger('change');
+                    $('#on_tap_action__select').val('general').trigger('change');
+                    $('#audience_all').prop('checked', true);
+                    $('#send_type_immediate').prop('checked', true).trigger('change');
+                    $('#imageUpload').val('');
+                    $('.image-preview').attr('src', '').hide();
+                    $('#preview_notif_title').text('{{ translate("Notification Title") }}');
+                    $('#preview_notif_body').text('{{ translate("Your push notification description will appear here on customer phones.") }}');
+                    $('#phone_notif_image_container').addClass('d-none');
+                    $('#preview_notif_img').attr('src', '');
+                    updatePreviewActionTag();
+                    $('.title-count').text('0/100');
+                    $('.desc-count').text('0/200');
+                    setTimeout(calculateEstimatedReach, 300);
+                });
             });
         });
 
@@ -1397,158 +1555,34 @@
             dropdownParent: $('#edit__NotifiCation')
         });
 
-        $(document).ready(function () {
-            $('.user_tz_offset_input').val(new Date().getTimezoneOffset());
+        function updateEditActionDropdown() {
+            let users = $('#edit_to_users').val() || [];
+            let isAll = users.includes('all') || users.length === 0;
 
-            // Dynamic Reach Calculation Function
-            function calculateEstimatedReach() {
-                let categoryId = $('#category_selector__select').val();
-                let audienceType = $('input[name="audience_type"]:checked').val() || 'all';
-                let zoneIds = $('#zone_selector__select4').val() || [];
-                let toUsers = $('#user_selector__select').val() || ['customer'];
+            let hasCustomer = users.includes('customer') || isAll;
+            let hasPartner = users.includes('partner-admin') || isAll;
+            let hasProvider = users.includes('provider-admin') || isAll;
 
-                $('#reach_calculation_status').text('{{ translate("Updating...") }}');
-
-                $.ajax({
-                    url: '{{ route("admin.push-notification.estimate-reach") }}',
-                    type: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        category_id: categoryId,
-                        audience_type: audienceType,
-                        zone_ids: zoneIds,
-                        to_users: toUsers
-                    },
-                    success: function (res) {
-                        if (res.success) {
-                            $('#estimated_reach_display').text(res.estimated_reach);
-                            $('#estimated_reach_input').val(res.estimated_reach);
-                            let breakdown = `${res.customer_count} Customers`;
-                            if (res.provider_count > 0) breakdown += `, ${res.provider_count} Providers`;
-                            if (res.serviceman_count > 0) breakdown += `, ${res.serviceman_count} Servicemen`;
-                            $('#reach_breakdown_display').text(breakdown);
-                            $('#reach_calculation_status').text('{{ translate("Active Target") }}');
-                            $('#preview_summary_reach_text').text(`Reaching ~${res.estimated_reach} recipients (${res.customer_count} Customers)`);
-                        }
-                    },
-                    error: function () {
-                        $('#reach_calculation_status').text('{{ translate("Ready") }}');
-                    }
-                });
+            if (hasCustomer) {
+                $('#edit_optgroup_customer').show().removeAttr('disabled');
+            } else {
+                $('#edit_optgroup_customer').hide().attr('disabled', 'disabled');
             }
 
-            // --- Live Mobile Phone Preview Bindings ---
-            $('#notif_title_input').on('input', function() {
-                let val = $(this).val();
-                $('#preview_notif_title').text(val && val.trim() !== '' ? val : '{{ translate("Notification Title") }}');
-            });
-
-            $('#notif_desc_input').on('input', function() {
-                let val = $(this).val();
-                $('#preview_notif_body').text(val && val.trim() !== '' ? val : '{{ translate("Your push notification description will appear here on the customer mobile screen.") }}');
-            });
-
-            $('#imageUpload').on('change', function() {
-                if (this.files && this.files[0]) {
-                    let reader = new FileReader();
-                    reader.onload = function(e) {
-                        $('#preview_notif_img').attr('src', e.target.result);
-                        $('#phone_notif_image_container').removeClass('d-none');
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                } else {
-                    $('#phone_notif_image_container').addClass('d-none');
-                    $('#preview_notif_img').attr('src', '');
-                }
-            });
-
-            function updatePreviewActionTag() {
-                let catText = $('#category_selector__select option:selected').text();
-                let catVal = $('#category_selector__select').val();
-                let actionVal = $('#on_tap_action__select').val();
-
-                let tagText = '{{ translate("Tap to open MMC App") }}';
-                if (actionVal === 'quote_form') {
-                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Quote Form") }}' : '{{ translate("Tap opens Quote Form") }}';
-                } else if (actionVal === 'service_page') {
-                    tagText = catVal ? '{{ translate("Tap opens") }} ' + catText.trim() + ' {{ translate("Details") }}' : '{{ translate("Tap opens Service Page") }}';
-                } else if (actionVal === 'offer_page') {
-                    tagText = '{{ translate("Tap opens Offers & Deals") }}';
-                }
-                $('#preview_notif_action_text').text(tagText);
+            if (hasPartner) {
+                $('#edit_optgroup_partner').show().removeAttr('disabled');
+            } else {
+                $('#edit_optgroup_partner').hide().attr('disabled', 'disabled');
             }
 
-            $('#category_selector__select, #on_tap_action__select').on('change', updatePreviewActionTag);
-            updatePreviewActionTag();
-
-            $(document).on('change', '#category_selector__select, input[name="audience_type"], #zone_selector__select4, #user_selector__select', function () {
-                calculateEstimatedReach();
-            });
-
-            // Dynamic Audience Targeting Visibility: Only show when a Service Category is chosen
-            function toggleAudienceFilterVisibility() {
-                let catVal = $('#category_selector__select').val();
-                let catText = $('#category_selector__select option:selected').text();
-                if (catVal && catVal.trim() !== '') {
-                    $('#audience_targeting_filter_wrapper').slideDown(200);
-                    $('#targeted_service_label_text').text('{{ translate("Only customers who previously booked or requested quotes for") }} ' + catText.trim());
-                    if ($('#on_tap_action__select').val() === 'general') {
-                        $('#on_tap_action__select').val('quote_form').trigger('change');
-                    }
-                } else {
-                    $('#audience_targeting_filter_wrapper').slideUp(200);
-                    $('#audience_all').prop('checked', true);
-                }
+            if (hasProvider) {
+                $('#edit_optgroup_provider').show().removeAttr('disabled');
+            } else {
+                $('#edit_optgroup_provider').hide().attr('disabled', 'disabled');
             }
+        }
 
-            $('#category_selector__select').on('change', function () {
-                toggleAudienceFilterVisibility();
-            });
-            toggleAudienceFilterVisibility();
-
-            // Action hints map
-            const actionHints = {
-                'general': '{{ translate("Customer taps notification to open MMC App home.") }}',
-                'quote_form': '{{ translate("Directly opens the Photo Upload Quote Form in customer app.") }}',
-                'service_page': '{{ translate("Directly opens the Service Details screen in customer app.") }}',
-                'offer_page': '{{ translate("Directly opens the MMC Promotions & Offers screen.") }}'
-            };
-            $('#on_tap_action__select').on('change', function () {
-                let act = $(this).val() || 'general';
-                $('#on_tap_action_hint').html('<span class="material-icons fz-12 align-middle">info</span> ' + (actionHints[act] || ''));
-            });
-
-            // Live character counters
-            $(document).on('input', '#notif_title_input', function () {
-                $('.title-count').text($(this).val().length + '/100');
-            });
-            $(document).on('input', '#notif_desc_input', function () {
-                $('.desc-count').text($(this).val().length + '/200');
-            });
-
-            // Initial reach calculation on page load
-            setTimeout(calculateEstimatedReach, 500);
-            $('form').on('reset', function () {
-                setTimeout(function () {
-                    $('#zone_selector__select4').val(['all']).trigger('change');
-                    $('#user_selector__select').val(['customer']).trigger('change');
-                    $('#category_selector__select').val('').trigger('change');
-                    $('#on_tap_action__select').val('general').trigger('change');
-                    $('#audience_all').prop('checked', true);
-                    $('#send_type_immediate').prop('checked', true).trigger('change');
-                    $('#imageUpload').val('');
-                    $('.image-preview').attr('src', '').hide();
-                    $('#preview_notif_title').text('{{ translate("Notification Title") }}');
-                    $('#preview_notif_body').text('{{ translate("Your push notification description will appear here on customer phones.") }}');
-                    $('#phone_notif_image_container').addClass('d-none');
-                    $('#preview_notif_img').attr('src', '');
-                    updatePreviewActionTag();
-                    $('.title-count').text('0/100');
-                    $('.desc-count').text('0/200');
-                    setTimeout(calculateEstimatedReach, 300);
-                });
-            });
-        });
+        $('#edit_to_users').on('change', updateEditActionDropdown);
 
         let selectedNotificationItem;
         let selectedStatusRoute;
