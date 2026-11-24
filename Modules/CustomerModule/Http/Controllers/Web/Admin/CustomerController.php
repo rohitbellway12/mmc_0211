@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Modules\BookingModule\Entities\Booking;
 use Modules\CustomerModule\Emails\CustomerRegistrationMail;
+use Modules\CustomerModule\Entities\CustomerDocument;
+use Modules\CustomerModule\Entities\CustomerDocumentType;
 use Modules\ReviewModule\Entities\Review;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\UserAddress;
@@ -54,7 +56,8 @@ class CustomerController extends Controller
     public function create(Request $request): View|Factory|Application
     {
         $this->authorize('customer_add');
-        return view('customermodule::admin.create');
+        $documentTypes = CustomerDocumentType::where('is_active', 1)->latest()->get();
+        return view('customermodule::admin.create', compact('documentTypes'));
     }
 
     /**
@@ -146,10 +149,11 @@ class CustomerController extends Controller
             'last_name' => 'required',
             'email' => 'required|email',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10',
-            'password' => 'required|min:6',
-            'confirm_password' => 'same:password',
+            'password' => 'nullable|min:6',
+            'confirm_password' => 'nullable|same:password',
             'gender' => 'in:male,female,others',
             'profile_image' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
+            'documents.*' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf,doc,docx|max:15000',
         ]);
 
         if (User::where('email', $request['email'])->exists()) {
@@ -161,7 +165,7 @@ class CustomerController extends Controller
             return back();
         }
 
-        $password = $request->password;
+        $password = $request->filled('password') ? $request->password : '12345678';
 
         $user = $this->user;
         $user->first_name = $request->first_name;
@@ -171,10 +175,25 @@ class CustomerController extends Controller
         $user->profile_image = $request->has('profile_image') ? file_uploader('user/profile_image/', 'png', $request->profile_image) : 'default.png';
         $user->date_of_birth = $request->date_of_birth;
         $user->gender = $request->gender ?? 'male';
-        $user->password = bcrypt($request->password);
+        $user->password = bcrypt($password);
         $user->user_type = 'customer';
         $user->is_active = 1;
         $user->save();
+
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $docTypeId => $file) {
+                if ($file && $file->isValid()) {
+                    $extension = $file->getClientOriginalExtension();
+                    $storedName = file_uploader('customer/document/', $extension, $file);
+                    CustomerDocument::create([
+                        'user_id' => $user->id,
+                        'document_type_id' => $docTypeId,
+                        'file_path' => $storedName,
+                        'file_name' => $file->getClientOriginalName(),
+                    ]);
+                }
+            }
+        }
 
         try {
             $otp = env('APP_ENV') != 'live' ? '1234' : rand(1000, 9999);
@@ -295,8 +314,9 @@ class CustomerController extends Controller
     public function edit(string $id): Application|Factory|View
     {
         $this->authorize('customer_update');
-        $customer = $this->user->whereIn('user_type', CUSTOMER_USER_TYPES)->find($id);
-        return view('customermodule::admin.edit', compact('customer'));
+        $customer = $this->user->whereIn('user_type', CUSTOMER_USER_TYPES)->with(['documents.documentType'])->find($id);
+        $documentTypes = CustomerDocumentType::where('is_active', 1)->latest()->get();
+        return view('customermodule::admin.edit', compact('customer', 'documentTypes'));
     }
 
     /**
@@ -320,6 +340,7 @@ class CustomerController extends Controller
             'confirm_password' => !is_null($request->password) ? 'required|same:password' : '',
             'gender' => 'in:male,female,others',
             'profile_image' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
+            'documents.*' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf,doc,docx|max:15000',
         ]);
 
         if (User::where('email', $request['email'])->where('id', '!=', $customer->id)->exists()) {
@@ -339,6 +360,25 @@ class CustomerController extends Controller
         $customer->date_of_birth = $request->date_of_birth;
         $customer->gender = $request->has('gender') ? $request->gender : $customer->gender;
         $customer->save();
+
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $docTypeId => $file) {
+                if ($file && $file->isValid()) {
+                    $extension = $file->getClientOriginalExtension();
+                    $storedName = file_uploader('customer/document/', $extension, $file);
+                    CustomerDocument::updateOrCreate(
+                        [
+                            'user_id' => $customer->id,
+                            'document_type_id' => $docTypeId,
+                        ],
+                        [
+                            'file_path' => $storedName,
+                            'file_name' => $file->getClientOriginalName(),
+                        ]
+                    );
+                }
+            }
+        }
 
         Toastr::success(translate(DEFAULT_UPDATE_200['message']));
         return redirect('admin/customer/list');

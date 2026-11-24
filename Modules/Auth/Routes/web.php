@@ -19,6 +19,8 @@ Route::group(['prefix' => 'provider', 'as' => 'provider.', 'namespace' => null],
 
         Route::get('login', 'LoginController@providerLoginForm')->name('login');
         Route::post('login', 'LoginController@providerLogin');
+        Route::post('send-otp', 'LoginController@providerSendOtp')->name('send-otp');
+        Route::post('otp-login', 'LoginController@providerOtpLoginWeb')->name('otp-login');
         Route::get('logout', 'LoginController@logout')->name('logout');
 
         Route::group(['prefix' => 'reset-password', 'as' => 'reset-password.'], function () {

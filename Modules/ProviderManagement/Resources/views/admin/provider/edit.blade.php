@@ -226,27 +226,6 @@
                                                readonly
                                                 required >
                                     </div>
-                                    <div class="row gx-2">
-                                        <div class="col-lg-6">
-                                            <div class="form-floating form-floating__icon mb-30">
-                                                <input type="password" class="form-control" name="password"
-                                                       placeholder="{{translate('Password')}}">
-                                                <label>{{translate('Password')}}</label>
-                                                <span class="material-icons togglePassword">visibility_off</span>
-                                                <span class="material-icons">lock</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <div class="form-floating form-floating__icon mb-30">
-                                                <input type="password" class="form-control"
-                                                       name="confirm_password"
-                                                       placeholder="{{translate('Confirm_Password')}}">
-                                                <label>{{translate('Confirm_Password')}}</label>
-                                                <span class="material-icons togglePassword">visibility_off</span>
-                                                <span class="material-icons">lock</span>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

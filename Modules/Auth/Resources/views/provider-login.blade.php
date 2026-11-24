@@ -295,52 +295,111 @@
                 </button>
             </div>
 
-            <form action="{{ route('provider.auth.login') }}" method="POST" id="login-form">
-                @csrf
-                <input type="hidden" name="login_type" id="login_type" value="provider">
+            <input type="hidden" name="login_type" id="login_type" value="provider">
 
-                <div class="form-group-premium">
-                    <span class="material-icons input-icon">email</span>
-                    <input type="email" name="email_or_phone" class="form-control input-premium"
-                        value="{{ request()->cookie('provider_remember_email') }}"
-                        placeholder="{{ translate('Email or Phone') }}" required id="email">
-                </div>
-
-                <div class="form-group-premium">
-                    <span class="material-icons input-icon">lock</span>
-                    <input type="password" name="password" class="form-control input-premium"
-                        value="{{ request()->cookie('provider_remember_password') }}"
-                        placeholder="{{ translate('Password') }}" required id="password">
-                    <span class="material-icons togglePassword" id="togglePassword">visibility_off</span>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center px-1">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="remember" value="1"
-                            {{ request()->cookie('provider_remember_checked') ? 'checked' : '' }} id="rememberMeCheckbox">
-                        <label class="form-check-label"
-                            for="rememberMeCheckbox">{{ translate('Keep me signed in') }}</label>
+            <!-- OTP Login Form (Default) -->
+            <div id="otp-login-container">
+                <form id="otp-login-form">
+                    @csrf
+                    <!-- Step 1: Email Input -->
+                    <div class="form-group-premium">
+                        <span class="material-icons input-icon">email</span>
+                        <input type="email" name="otp_email" id="otp_email" class="form-control input-premium"
+                            value="{{ request()->cookie('provider_remember_email') }}"
+                            placeholder="{{ translate('Enter your Registered Email') }}" required>
+                        <button type="button" id="btn-edit-email" class="btn btn-sm" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--primary); background: rgba(0,0,0,0.4); border-radius: 6px; font-size: 0.75rem; padding: 4px 8px;">
+                            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">edit</span> {{ translate('Change') }}
+                        </button>
                     </div>
-                    <a href="{{ route('provider.auth.reset-password.index') }}" class="form-check-label"
-                        style="color: var(--primary)">{{ translate('Forgot Password?') }}</a>
-                </div>
 
-                @php($recaptcha = business_config('recaptcha', 'third_party'))
-                @if (isset($recaptcha) && $recaptcha->is_active)
-                    <div class="recaptcha d-flex justify-content-center mt-4">
-                        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                    <!-- Step 2: OTP Input (Initially Hidden) -->
+                    <div id="otp-input-group" style="display: none;">
+                        <div class="form-group-premium mt-3">
+                            <span class="material-icons input-icon">pin</span>
+                            <input type="text" name="otp_code" id="otp_code" class="form-control input-premium"
+                                placeholder="{{ translate('Enter 4-digit OTP') }}" maxlength="6"
+                                style="letter-spacing: 4px; font-weight: 700; font-size: 1.1rem; text-align: center;">
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                            <span id="timer-text" style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;"></span>
+                            <button type="button" id="btn-resend-otp" class="btn btn-link p-0" style="display: none; color: var(--primary); font-size: 0.85rem; text-decoration: none; font-weight: 600;">
+                                {{ translate('Resend OTP') }}
+                            </button>
+                        </div>
                     </div>
-                @endif
 
-                <button type="submit" class="btn btn-premium" id="signInBtn">{{ translate('Login to Terminal') }}</button>
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center px-1 mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="otp_remember" value="1"
+                                {{ request()->cookie('provider_remember_checked') ? 'checked' : '' }} id="otpRememberCheckbox">
+                            <label class="form-check-label" for="otpRememberCheckbox">{{ translate('Keep me signed in') }}</label>
+                        </div>
+                        <a href="javascript:void(0)" id="switch-to-password" style="color: rgba(250, 210, 147, 0.8); font-size: 0.85rem; text-decoration: underline;">
+                            {{ translate('Login with Password') }}
+                        </a>
+                    </div>
 
-                <div class="form-footer mt-3">
-                    <span style="color: rgba(255, 255, 255, 0.65);">{{ translate('New Partner?') }}</span>
-                    <a href="{{ route('provider.auth.sign-up') }}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
-                        {{ translate('Sign Up / Register Here') }} &rarr;
-                    </a>
-                </div>
-            </form>
+                    <!-- Action Buttons -->
+                    <button type="button" class="btn btn-premium" id="btn-send-otp">{{ translate('Send Verification Code') }}</button>
+                    <button type="button" class="btn btn-premium" id="btn-verify-otp" style="display: none;">{{ translate('Verify & Login to Terminal') }}</button>
+                </form>
+            </div>
+
+            <!-- Password Login Form (Fallback / Alternative) -->
+            <div id="password-login-container" style="display: none;">
+                <form action="{{ route('provider.auth.login') }}" method="POST" id="login-form">
+                    @csrf
+                    <input type="hidden" name="login_type" id="pw_login_type" value="provider">
+
+                    <div class="form-group-premium">
+                        <span class="material-icons input-icon">email</span>
+                        <input type="email" name="email_or_phone" class="form-control input-premium"
+                            value="{{ request()->cookie('provider_remember_email') }}"
+                            placeholder="{{ translate('Email') }}" required id="email">
+                    </div>
+
+                    <div class="form-group-premium">
+                        <span class="material-icons input-icon">lock</span>
+                        <input type="password" name="password" class="form-control input-premium"
+                            value="{{ request()->cookie('provider_remember_password') }}"
+                            placeholder="{{ translate('Password') }}" required id="password">
+                        <span class="material-icons togglePassword" id="togglePassword">visibility_off</span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center px-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember" value="1"
+                                {{ request()->cookie('provider_remember_checked') ? 'checked' : '' }} id="rememberMeCheckbox">
+                            <label class="form-check-label" for="rememberMeCheckbox">{{ translate('Keep me signed in') }}</label>
+                        </div>
+                        <a href="{{ route('provider.auth.reset-password.index') }}" class="form-check-label"
+                            style="color: var(--primary)">{{ translate('Forgot Password?') }}</a>
+                    </div>
+
+                    @php($recaptcha = business_config('recaptcha', 'third_party'))
+                    @if (isset($recaptcha) && $recaptcha->is_active)
+                        <div class="recaptcha d-flex justify-content-center mt-4">
+                            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                        </div>
+                    @endif
+
+                    <button type="submit" class="btn btn-premium" id="signInBtn">{{ translate('Login with Password') }}</button>
+
+                    <div class="text-center mt-3">
+                        <a href="javascript:void(0)" id="switch-to-otp" style="color: var(--primary); font-size: 0.85rem; text-decoration: underline;">
+                            &larr; {{ translate('Back to Email OTP Login') }}
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-footer mt-3">
+                <span style="color: rgba(255, 255, 255, 0.65);">{{ translate('New Partner?') }}</span>
+                <a href="{{ route('provider.auth.sign-up') }}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
+                    {{ translate('Sign Up / Register Here') }} &rarr;
+                </a>
+            </div>
         </div>
 
         <div class="software-version">
@@ -383,7 +442,7 @@
             console.log("Demo Mode: provider@provider.com / 12345678");
         @endif
 
-        @if ($errors->any())
+        @if (isset($errors) && $errors->any())
             @foreach ($errors->all() as $error)
                 toastr.error('{{ $error }}', 'Error', {
                     CloseButton: true,
@@ -396,6 +455,7 @@
             $(this).addClass('active-role-btn').css({'background': 'var(--gold-gradient)', 'color': '#000', 'font-weight': '700'});
             $('#btn-login-partner').removeClass('active-role-btn').css({'background': 'transparent', 'color': 'rgba(255, 255, 255, 0.65)', 'font-weight': '600'});
             $('#login_type').val('provider');
+            $('#pw_login_type').val('provider');
             $('#login-title').text("{{ translate('Provider Sign In') }}");
             $('#signInBtn').text("{{ translate('Login to Terminal') }}");
         });
@@ -404,8 +464,154 @@
             $(this).addClass('active-role-btn').css({'background': 'var(--gold-gradient)', 'color': '#000', 'font-weight': '700'});
             $('#btn-login-provider').removeClass('active-role-btn').css({'background': 'transparent', 'color': 'rgba(255, 255, 255, 0.65)', 'font-weight': '600'});
             $('#login_type').val('partner');
+            $('#pw_login_type').val('partner');
             $('#login-title').text("{{ translate('Partner Sign In') }}");
             $('#signInBtn').text("{{ translate('Login as Partner') }}");
+        });
+
+        // Switch between OTP and Password login modes
+        $('#switch-to-password').on('click', function() {
+            $('#otp-login-container').hide();
+            $('#password-login-container').fadeIn(200);
+            $('#email').val($('#otp_email').val());
+        });
+
+        $('#switch-to-otp').on('click', function() {
+            $('#password-login-container').hide();
+            $('#otp-login-container').fadeIn(200);
+            $('#otp_email').val($('#email').val());
+        });
+
+        let countdownTimer = null;
+        function startOtpTimer(seconds) {
+            clearInterval(countdownTimer);
+            let remaining = seconds;
+            $('#btn-resend-otp').hide();
+            $('#timer-text').show().text("{{ translate('Resend OTP in') }} " + remaining + "s");
+
+            countdownTimer = setInterval(function() {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(countdownTimer);
+                    $('#timer-text').hide();
+                    $('#btn-resend-otp').fadeIn(200);
+                } else {
+                    $('#timer-text').text("{{ translate('Resend OTP in') }} " + remaining + "s");
+                }
+            }, 1000);
+        }
+
+        // Send OTP handler
+        function sendOtpRequest() {
+            const email = $('#otp_email').val().trim();
+            if (!email) {
+                toastr.error("{{ translate('Please enter your email address') }}");
+                $('#otp_email').focus();
+                return;
+            }
+
+            const sendBtn = $('#btn-send-otp');
+            sendBtn.prop('disabled', true).text("{{ translate('Sending Verification Code...') }}");
+
+            $.ajax({
+                url: "{{ route('provider.auth.send-otp') }}",
+                method: "POST",
+                data: {
+                    email: email,
+                    login_type: $('#login_type').val(),
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(res) {
+                    toastr.success(res.message);
+                    $('#otp_email').prop('readonly', true);
+                    $('#btn-edit-email').show();
+                    $('#otp-input-group').slideDown(250);
+                    $('#btn-send-otp').hide();
+                    $('#btn-verify-otp').show();
+                    $('#otp_code').focus();
+                    startOtpTimer(res.expires_in || 60);
+                },
+                error: function(err) {
+                    const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : "{{ translate('Failed to send verification code. Please try again.') }}";
+                    toastr.error(msg);
+                },
+                complete: function() {
+                    sendBtn.prop('disabled', false).text("{{ translate('Send Verification Code') }}");
+                }
+            });
+        }
+
+        $('#btn-send-otp').on('click', sendOtpRequest);
+        $('#btn-resend-otp').on('click', sendOtpRequest);
+
+        // Edit Email
+        $('#btn-edit-email').on('click', function() {
+            clearInterval(countdownTimer);
+            $('#otp_email').prop('readonly', false).focus();
+            $(this).hide();
+            $('#otp-input-group').slideUp(200);
+            $('#otp_code').val('');
+            $('#btn-verify-otp').hide();
+            $('#btn-send-otp').show();
+            $('#timer-text').hide();
+            $('#btn-resend-otp').hide();
+        });
+
+        // Verify OTP and Login
+        $('#btn-verify-otp').on('click', function() {
+            const email = $('#otp_email').val().trim();
+            const otp = $('#otp_code').val().trim();
+
+            if (!otp) {
+                toastr.error("{{ translate('Please enter the verification code (OTP)') }}");
+                $('#otp_code').focus();
+                return;
+            }
+
+            const verifyBtn = $(this);
+            verifyBtn.prop('disabled', true).text("{{ translate('Verifying & Logging In...') }}");
+
+            $.ajax({
+                url: "{{ route('provider.auth.otp-login') }}",
+                method: "POST",
+                data: {
+                    email: email,
+                    otp: otp,
+                    login_type: $('#login_type').val(),
+                    remember: $('#otpRememberCheckbox').is(':checked') ? 1 : 0,
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(res) {
+                    toastr.success(res.message);
+                    setTimeout(function() {
+                        window.location.href = res.redirect_url;
+                    }, 500);
+                },
+                error: function(err) {
+                    const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : "{{ translate('Invalid OTP. Please try again.') }}";
+                    toastr.error(msg);
+                    verifyBtn.prop('disabled', false).text("{{ translate('Verify & Login to Terminal') }}");
+                }
+            });
+        });
+
+        // Allow pressing Enter key in inputs
+        $('#otp_email').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                if ($('#btn-send-otp').is(':visible')) {
+                    $('#btn-send-otp').trigger('click');
+                }
+            }
+        });
+
+        $('#otp_code').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                if ($('#btn-verify-otp').is(':visible')) {
+                    $('#btn-verify-otp').trigger('click');
+                }
+            }
         });
 
         @if(request('type') == 'partner' || request('role') == 'partner')

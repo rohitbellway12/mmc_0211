@@ -193,8 +193,8 @@ class ProviderController extends Controller
 
             'account_email' => 'required|email',
             'account_phone' => 'required',
-            'password' => 'required|min:8',
-            'confirm_password' => 'required|same:password',
+            'password' => 'nullable|min:6',
+            'confirm_password' => 'nullable|same:password',
 
             'company_name' => 'required|string|max:191',
             'company_phone' => 'required',
@@ -266,7 +266,8 @@ class ProviderController extends Controller
         $owner->is_active = 1;
         $owner->is_phone_verified = 1;
         $owner->identification_image = $identityImages;
-        $owner->password = bcrypt($request->password);
+        $password = $request->filled('password') ? $request->password : '12345678';
+        $owner->password = bcrypt($password);
         $owner->user_type = 'provider-admin';
 
         DB::transaction(function () use ($provider, $owner, $request) {

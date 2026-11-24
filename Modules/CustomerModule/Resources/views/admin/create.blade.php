@@ -64,27 +64,6 @@
                                             </div>
                                         </div>
 
-                                        <div class="mb-30">
-                                            <div class="form-floating form-floating__icon">
-                                                <input type="password" class="form-control" name="password"
-                                                       placeholder="{{translate('ex: password')}} *"
-                                                       required="" value="{{old('password')}}" minlength="8">
-                                                <label>{{translate('password')}} *</label>
-                                                <span class="material-icons">lock</span>
-                                                <span class="material-icons togglePassword">visibility_off</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-30">
-                                            <div class="form-floating form-floating__icon">
-                                                <input type="password" class="form-control" name="confirm_password"
-                                                       placeholder="{{translate('ex: Confirm_Password')}} *"
-                                                       required="" minlength="8">
-                                                <label>{{translate('Confirm_Password')}} *</label>
-                                                <span class="material-icons togglePassword">visibility_off</span>
-                                                <span class="material-icons">lock</span>
-                                            </div>
-                                        </div>
                                     </div>
 
                                     <div class="col-lg-6">
@@ -105,6 +84,51 @@
                                             </p>
                                         </div>
                                     </div>
+
+                                    @if(isset($documentTypes) && $documentTypes->count() > 0)
+                                        <div class="col-12 mt-4">
+                                            <div class="d-flex align-items-center justify-content-between mb-3 border-top pt-4">
+                                                <h4 class="mb-0 text-capitalize d-flex align-items-center gap-2">
+                                                    <span class="material-icons text-primary">folder_shared</span>
+                                                    {{translate('Customer Documents')}}
+                                                </h4>
+                                                <a href="{{route('admin.customer.document-setup.index')}}" class="btn btn-sm btn--secondary" target="_blank">
+                                                    <span class="material-icons fs-14">settings</span>
+                                                    {{translate('Document Setup')}}
+                                                </a>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                @foreach($documentTypes as $docType)
+                                                    <div class="col-md-6 col-lg-4">
+                                                        <div class="border rounded p-3 h-100 bg-light">
+                                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                                <label class="form-label fw-bold mb-0 text-dark">
+                                                                    {{$docType->title}}
+                                                                    @if($docType->is_required)
+                                                                        <span class="text-danger">* ({{translate('Required')}})</span>
+                                                                    @endif
+                                                                </label>
+                                                            </div>
+                                                            @if(!empty($docType->description))
+                                                                <small class="text-muted d-block mb-2">{{$docType->description}}</small>
+                                                            @endif
+                                                            <div class="mt-2">
+                                                                <input type="file" 
+                                                                       class="form-control" 
+                                                                       name="documents[{{$docType->id}}]" 
+                                                                       accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx"
+                                                                       {{$docType->is_required ? 'required' : ''}}>
+                                                                <div class="form-text fs-12 text-muted mt-1">
+                                                                    {{translate('Formats: JPG, PNG, WEBP, PDF, DOC (Max 15MB)')}}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     <div class="col-12">
                                         <div class="d-flex justify-content-end gap-20 mt-30">
