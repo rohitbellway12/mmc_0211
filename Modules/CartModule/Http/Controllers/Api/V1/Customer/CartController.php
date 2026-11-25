@@ -159,6 +159,13 @@ class CartController extends Controller
                 ->where(['variant_key' => $currentVariantKey ?? 'default'])
                 ->first();
 
+            if (!isset($variation)) {
+                $variation = $this->variation
+                    ->where('service_id', $sId)
+                    ->where(['variant_key' => $currentVariantKey ?? 'default'])
+                    ->first();
+            }
+
             if (isset($variation) || isset($service)) {
                 $checkCart = $this->cart->where([
                     'service_id' => $sId,

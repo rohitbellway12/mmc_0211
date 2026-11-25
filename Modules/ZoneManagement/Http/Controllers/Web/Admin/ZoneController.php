@@ -16,6 +16,8 @@ use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Objects\Polygon;
 use Modules\BusinessSettingsModule\Entities\Translation;
+use Modules\CategoryManagement\Entities\Category;
+use Modules\ServiceManagement\Entities\Variation;
 use Modules\ZoneManagement\Entities\Zone;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Stevebauman\Location\Facades\Location;
@@ -173,6 +175,29 @@ class ZoneController extends Controller
                             ['value' => $request->name[$index]]
                         );
                     }
+                }
+            }
+
+            // Auto-link newly created zone to all active main categories
+            $categories = Category::where('position', 1)->get();
+            $zoneIdStr = (string)$zone->id;
+            foreach ($categories as $category) {
+                $category->zones()->syncWithoutDetaching([$zoneIdStr]);
+            }
+
+            // Auto-create service variations for the new zone
+            $existingVariations = Variation::all()->groupBy('service_id');
+            foreach ($existingVariations as $serviceId => $serviceVars) {
+                $uniqueVariants = $serviceVars->unique('variant_key');
+                foreach ($uniqueVariants as $v) {
+                    Variation::firstOrCreate([
+                        'service_id' => $serviceId,
+                        'variant_key' => $v->variant_key,
+                        'zone_id' => $zoneIdStr,
+                    ], [
+                        'variant' => $v->variant,
+                        'price' => $v->price,
+                    ]);
                 }
             }
 
@@ -336,6 +361,8 @@ class ZoneController extends Controller
         $this->authorize('zone_delete');
         $zone = $this->zone->where('id', $id)->withoutGlobalScope('translate')->first();
         $zone->translations()->delete();
+        DB::table('category_zone')->where('zone_id', $id)->delete();
+        DB::table('variations')->where('zone_id', $id)->delete();
         $zone->delete();
         Toastr::success(translate(ZONE_DESTROY_200['message']));
         return back();

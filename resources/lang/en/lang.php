@@ -7930,4 +7930,9 @@ _Message' => 'Customer notification for provider bid offer
   'Customer Actions (App & Web)' => 'Customer Actions (App & Web)',
   'customer (App & Web)' => 'Customer (App & Web)',
   'Customer taps notification to open MMC App or Website.' => 'Customer taps notification to open MMC App or Website.',
+  'click_this_icon_to_start_pin_points_in_the_map_and_connect_them_
+                                                        to_draw_a_
+                                                        zone_._Minimum_3_points_required' => 'Click this icon to start pin points in the map and connect them 
+                                                        to draw a 
+                                                        zone . Minimum 3 points required',
 );

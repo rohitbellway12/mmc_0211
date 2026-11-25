@@ -155,7 +155,7 @@ class CategoryController extends Controller
         $category->description = null;
         $category->save();
         $zoneIds = $request->zone_ids;
-        if (in_array('all', $zoneIds)) {
+        if (empty($zoneIds) || in_array('all', (array)$zoneIds)) {
             $zoneIds = $this->zone->where('is_active', 1)->pluck('id')->toArray();
         }
         $category->zones()->sync($zoneIds);
@@ -250,7 +250,7 @@ class CategoryController extends Controller
         $category->save();
 
         $zoneIds = $request->zone_ids;
-        if (in_array('all', $zoneIds)) {
+        if (empty($zoneIds) || in_array('all', (array)$zoneIds)) {
             $zoneIds = $this->zone->where('is_active', 1)->pluck('id')->toArray();
         }
         $category->zones()->sync($zoneIds);

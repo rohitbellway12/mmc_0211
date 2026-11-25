@@ -717,6 +717,10 @@ class ServiceController extends Controller
     {
         $formatting = [];
         $filtered = $service['variations']->where('zone_id', Config::get('zone_id'));
+        if ($filtered->isEmpty() && $service['variations']->isNotEmpty()) {
+            $firstZoneId = $service['variations']->first()->zone_id;
+            $filtered = $service['variations']->where('zone_id', $firstZoneId);
+        }
         $formatting['zone_id'] = Config::get('zone_id');
         $formatting['default_price'] = $filtered->first() ? $filtered->first()->price : 0;
         
