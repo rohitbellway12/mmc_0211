@@ -39,11 +39,13 @@
     ********************/
 :root,
 [data-bs-theme=light] {
-  /* Primary */
-  --bs-primary-light: #ECEDF7;
-  --bs-primary: #4153B3;
-  --bs-primary-dark: #34428F;
-  --bs-primary-rgb: 65, 83, 179;
+  /* Primary - MMC Dark Gold Theme */
+  --bs-primary-light: #F5E6C8;
+  --bs-primary: #9A6F1E;
+  --bs-primary-dark: #7D5A15;
+  --bs-primary-rgb: 154, 111, 30;
+  --c1: #9A6F1E;
+  --c2: #9A6F1E;
   /* BG Color */
   --bg-color: #EFF1F4;
   --bg-color2: #E6E7EC;
@@ -51,7 +53,7 @@
   --bg-color4: #FAFAFA;
   --bs-light: #F7F8F9;
   --bs-light-rgb: 247, 248, 249;
-  --btn-rgb: 4, 97, 165;
+  --btn-rgb: 154, 111, 30;
   /* Text Color */
   --bs-dark: #18181a;
   --bs-body-color: #5E6472;

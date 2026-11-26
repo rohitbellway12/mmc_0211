@@ -137,15 +137,110 @@ class BookingEstimateController extends Controller
         $dueAmount = $isPartial ? round($totalAmount - $amountToPay, 2) : 0;
         $paymentMethod = $request->get('payment_method', 'cash_after_service');
 
+        $isDigitalPayment = ($paymentMethod !== 'cash_after_service' && $paymentMethod !== 'wallet_payment');
+
+        // If digital payment (e.g. Stripe, Card, etc.), DO NOT create booking yet!
+        // Return payment redirect link first. Booking will ONLY be created when payment succeeds.
+        if ($isDigitalPayment) {
+            try {
+                $customerUser = User::find($customerId) ?? auth('api')->user();
+                $payer = new Payer(
+                    $customerUser ? ($customerUser->first_name . ' ' . $customerUser->last_name) : $estimate->customer_name,
+                    $customerUser?->email ?? $estimate->customer_email,
+                    $customerUser?->phone ?? $estimate->customer_phone,
+                    ''
+                );
+
+                $payment_info = new Payment(
+                    success_hook: 'estimate_digital_payment_success',
+                    failure_hook: 'estimate_digital_payment_fail',
+                    currency_code: currency_code(),
+                    payment_method: $paymentMethod,
+                    payment_platform: $request->payment_platform ?? 'app',
+                    payer_id: $customerId,
+                    receiver_id: null,
+                    additional_data: [
+                        'estimate_id' => $estimate->id,
+                        'customer_id' => $customerId,
+                        'is_partial' => $isPartial,
+                        'amount_to_pay' => $amountToPay,
+                        'due_amount' => $dueAmount,
+                        'payment_method' => $paymentMethod,
+                        'callback' => $request->callback,
+                        'payment_platform' => $request->payment_platform ?? 'app',
+                    ],
+                    payment_amount: $amountToPay,
+                    external_redirect_link: $request->callback ?? null,
+                    attribute: 'estimate_id',
+                    attribute_id: $estimate->id
+                );
+
+                $receiver_info = new Receiver('Admin', 'example.png');
+                $redirectLink = $this->generate_link($payer, $payment_info, $receiver_info);
+
+                return response()->json(response_formatter([
+                    'response_code' => 'default_200',
+                    'message' => translate('Redirect to payment link to complete payment'),
+                ], [
+                    'redirect_link' => $redirectLink,
+                    'amount' => $amountToPay,
+                    'is_partial' => $isPartial,
+                    'due_amount' => $dueAmount,
+                    'estimate_id' => $estimate->id,
+                ]), 200);
+            } catch (\Exception $e) {
+                info("Estimate accept digital payment error: " . $e->getMessage());
+                return response()->json(response_formatter(DEFAULT_400, null, [['error_code' => 'payment_gateway_error', 'message' => $e->getMessage()]]), 400);
+            }
+        }
+
+        // For non-digital payment methods (cash_after_service, wallet_payment):
+        try {
+            $booking = self::createBookingFromEstimateRecord(
+                estimate: $estimate,
+                customerId: $customerId,
+                paymentMethod: $paymentMethod,
+                transactionId: ($paymentMethod === 'wallet_payment' ? ('wallet_' . time()) : 'cash-payment'),
+                isPartial: $isPartial,
+                amountToPay: $amountToPay,
+                dueAmount: $dueAmount
+            );
+
+            $responseData = [
+                'booking_id' => $booking->id,
+                'readable_id' => $booking->readable_id,
+                'booking' => $booking,
+                'is_partial' => $isPartial,
+                'paid_amount' => ($paymentMethod === 'wallet_payment') ? $amountToPay : 0,
+                'due_amount' => $isPartial ? $dueAmount : 0,
+            ];
+
+            return response()->json(response_formatter([
+                'response_code' => 'booking_placed_200',
+                'message' => translate('Quotation accepted and booking created successfully!'),
+            ], $responseData), 200);
+        } catch (\Exception $e) {
+            return response()->json(response_formatter(DEFAULT_400, null, [['error_code' => 'booking_failed', 'message' => $e->getMessage()]]), 400);
+        }
+    }
+
+    /**
+     * Reusable method to create a booking from an estimate (called upon payment success or cash accept)
+     */
+    public static function createBookingFromEstimateRecord(
+        BookingEstimate $estimate,
+        string $customerId,
+        string $paymentMethod,
+        ?string $transactionId,
+        int $isPartial,
+        float $amountToPay,
+        float $dueAmount
+    ): Booking {
+        $totalAmount = (float)$estimate->total_amount;
         $isCarBooking = ($estimate->module_type === 'car_hire' || $estimate->module_type === 'chauffeur');
 
-        // Convert to Booking in a transaction
-        $booking = null;
-        $carBooking = null;
-
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
             $booking = new Booking();
             $booking->customer_id = $customerId;
             $booking->provider_id = $estimate->provider_id;
@@ -153,9 +248,9 @@ class BookingEstimateController extends Controller
             $booking->sub_category_id = $estimate->sub_category_id;
             $booking->zone_id = $estimate->zone_id;
             $booking->booking_status = 'accepted';
-            $booking->is_paid = 0;
+            $booking->is_paid = ($isPartial || in_array($paymentMethod, ['cash_after_service', 'offline_payment'])) ? 0 : 1;
             $booking->payment_method = $paymentMethod;
-            $booking->transaction_id = $request->get('transaction_id', ($paymentMethod === 'cash_after_service' ? 'cash-payment' : null));
+            $booking->transaction_id = $transactionId ?? ($paymentMethod === 'cash_after_service' ? 'cash-payment' : null);
             $booking->total_booking_amount = $totalAmount;
             $booking->total_tax_amount = $estimate->tax_amount;
             $booking->total_discount_amount = $estimate->discount_amount;
@@ -170,7 +265,6 @@ class BookingEstimateController extends Controller
                 $photoList = is_array($decodedPhotos) ? $decodedPhotos : [$estimate->car_image];
                 $booking->evidence_photos = $photoList;
 
-                // Sync images to storage/app/public/booking/ so standard booking views find them
                 foreach ($photoList as $img) {
                     $sourcePath = storage_path('app/public/estimate/car/' . $img);
                     $destPath = storage_path('app/public/booking/' . $img);
@@ -250,6 +344,7 @@ class BookingEstimateController extends Controller
             ]);
 
             // If Car Hire or Chauffeur, create CarBooking
+            $carBooking = null;
             if ($isCarBooking && !empty($estimate->car_id)) {
                 $pickupTime24 = $estimate->pickup_time ? date("H:i:s", strtotime($estimate->pickup_time)) : '10:00:00';
                 $dropTime24 = $estimate->drop_time ? date("H:i:s", strtotime($estimate->drop_time)) : '18:00:00';
@@ -276,9 +371,10 @@ class BookingEstimateController extends Controller
                 $carBooking->security_deposit = floatval($estimate->security_deposit ?? 0);
                 $carBooking->total_amount = $estimate->total_amount;
                 $carBooking->payment_method = $paymentMethod;
-                $carBooking->payment_status = ($paymentMethod == 'cash_after_service') ? 'unpaid' : 'pending';
-                $carBooking->booking_status = 'pending';
-                $carBooking->is_paid = 0;
+                $carBooking->payment_status = ($paymentMethod == 'cash_after_service') ? 'unpaid' : ($isPartial ? 'partially_paid' : 'paid');
+                $carBooking->booking_status = 'confirmed';
+                $carBooking->is_paid = $booking->is_paid;
+                $carBooking->transaction_id = $transactionId;
                 $carBooking->save();
 
                 $estimate->car_booking_id = $carBooking->id;
@@ -293,9 +389,6 @@ class BookingEstimateController extends Controller
                     throw new \Exception(translate('Insufficient wallet balance'));
                 }
 
-                $tranId = 'wallet_payment_' . time();
-                $booking->transaction_id = $tranId;
-
                 if ($isPartial) {
                     BookingPartialPayment::create([
                         'booking_id' => $booking->id,
@@ -303,26 +396,43 @@ class BookingEstimateController extends Controller
                         'paid_amount' => $walletChargeAmount,
                         'due_amount' => $dueAmount,
                     ]);
-
-                    $booking->is_paid = 0;
-                    if ($carBooking) {
-                        $carBooking->is_paid = 0;
-                        $carBooking->payment_status = 'partially_paid';
-                        $carBooking->transaction_id = $tranId;
-                        $carBooking->save();
-                    }
-                } else {
-                    $booking->is_paid = 1;
-                    if ($carBooking) {
-                        $carBooking->is_paid = 1;
-                        $carBooking->payment_status = 'paid';
-                        $carBooking->transaction_id = $tranId;
-                        $carBooking->save();
-                    }
                 }
-                $booking->save();
-
                 placeBookingTransactionForPartialWallet($booking, $walletChargeAmount);
+            }
+
+            // Digital payment partial record & admin pending balance
+            if ($paymentMethod !== 'cash_after_service' && $paymentMethod !== 'wallet_payment') {
+                if ($isPartial) {
+                    BookingPartialPayment::create([
+                        'booking_id' => $booking->id,
+                        'paid_with' => $paymentMethod,
+                        'paid_amount' => $amountToPay,
+                        'due_amount' => $dueAmount,
+                    ]);
+                }
+
+                // Credit admin balance for digital payment
+                $admin_user = User::where('user_type', ADMIN_USER_TYPES[0])->first();
+                if ($admin_user) {
+                    $account = \Modules\TransactionModule\Entities\Account::where('user_id', $admin_user->id)->first();
+                    if ($account) {
+                        $account->balance_pending += $amountToPay;
+                        $account->save();
+                    }
+                    \Modules\TransactionModule\Entities\Transaction::create([
+                        'ref_trx_id' => null,
+                        'booking_id' => $booking->id,
+                        'trx_type' => TRX_TYPE['booking_amount'],
+                        'debit' => 0,
+                        'credit' => $amountToPay,
+                        'balance' => $account ? $account->balance_pending : 0,
+                        'from_user_id' => $booking->customer_id,
+                        'to_user_id' => $admin_user->id,
+                        'from_user_account' => null,
+                        'to_user_account' => ACCOUNT_STATES[0]['value'],
+                        'is_guest' => $booking->is_guest
+                    ]);
+                }
             }
 
             // Update estimate status
@@ -334,51 +444,8 @@ class BookingEstimateController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(response_formatter(DEFAULT_400, null, [['error_code' => 'booking_failed', 'message' => $e->getMessage()]]), 400);
-        }
-
-        // Digital Payment Gateway handling (e.g. Stripe, Razorpay, etc.)
-        $redirectLink = null;
-        if ($paymentMethod !== 'cash_after_service' && $paymentMethod !== 'wallet_payment') {
-            try {
-                $customerUser = User::find($customerId) ?? auth('api')->user();
-                $payer = new Payer(
-                    $customerUser ? ($customerUser->first_name . ' ' . $customerUser->last_name) : $estimate->customer_name,
-                    $customerUser?->email ?? $estimate->customer_email,
-                    $customerUser?->phone ?? $estimate->customer_phone,
-                    ''
-                );
-
-                $successHook = $isCarBooking ? 'car_booking_payment_success' : 'switch_offline_to_digital_payment_success';
-                $failHook = $isCarBooking ? 'car_booking_payment_fail' : 'switch_offline_to_digital_payment_fail';
-
-                $payment_info = new Payment(
-                    success_hook: $successHook,
-                    failure_hook: $failHook,
-                    currency_code: currency_code(),
-                    payment_method: $paymentMethod,
-                    payment_platform: $request->payment_platform ?? 'app',
-                    payer_id: $customerId,
-                    receiver_id: null,
-                    additional_data: [
-                        'car_booking_id' => $carBooking?->id,
-                        'booking_id' => $booking->id,
-                        'callback' => $request->callback,
-                        'is_partial' => $isPartial,
-                        'paid_amount' => $amountToPay,
-                        'due_amount' => $dueAmount,
-                    ],
-                    payment_amount: $amountToPay,
-                    external_redirect_link: $request->callback ?? null,
-                    attribute: $isCarBooking ? 'car_booking_id' : 'booking_id',
-                    attribute_id: $isCarBooking ? ($carBooking?->id ?? $booking->id) : $booking->id
-                );
-
-                $receiver_info = new Receiver('Admin', 'example.png');
-                $redirectLink = $this->generate_link($payer, $payment_info, $receiver_info);
-            } catch (\Exception $e) {
-                info("Estimate accept digital payment error: " . $e->getMessage());
-            }
+            info("createBookingFromEstimateRecord Error: " . $e->getMessage());
+            throw $e;
         }
 
         // Notify provider
@@ -423,24 +490,7 @@ class BookingEstimateController extends Controller
             info("Notification error on estimate accept: " . $e->getMessage());
         }
 
-        $responseData = [
-            'booking_id' => $booking->id,
-            'readable_id' => $booking->readable_id,
-            'booking' => $booking,
-            'is_partial' => $isPartial,
-            'paid_amount' => ($paymentMethod === 'wallet_payment' || $paymentMethod === 'cash_after_service') ? ($paymentMethod === 'wallet_payment' ? $amountToPay : 0) : 0,
-            'due_amount' => $isPartial ? $dueAmount : 0,
-        ];
-
-        if ($redirectLink) {
-            $responseData['redirect_link'] = $redirectLink;
-            $responseData['amount'] = $amountToPay;
-        }
-
-        return response()->json(response_formatter([
-            'response_code' => 'booking_placed_200',
-            'message' => translate('Quotation accepted and booking created successfully!'),
-        ], $responseData), 200);
+        return $booking;
     }
 
     /**

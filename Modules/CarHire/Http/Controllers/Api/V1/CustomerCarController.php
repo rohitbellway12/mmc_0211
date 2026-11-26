@@ -347,67 +347,169 @@ class CustomerCarController extends Controller
         $amountToPay = $isPartial ? round($totalAmount * 0.25, 2) : $totalAmount;
         $dueAmount = $isPartial ? round($totalAmount - $amountToPay, 2) : 0;
 
-        $booking = DB::transaction(function () use ($request, $totalAmount, $rentAmount, $deliveryFee, $securityDeposit, $amountToPay, $dueAmount, $isPartial, $car, $pickupTime24, $dropTime24) {
+        $bookingParams = [
+            'car_id' => $request->car_id,
+            'user_id' => auth('api')->id(),
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'pickup_type' => $request->pickup_type,
+            'pickup_time' => $pickupTime24,
+            'drop_time' => $dropTime24,
+            'description' => $request->description,
+            'rent_amount' => $rentAmount,
+            'delivery_fee' => $deliveryFee,
+            'security_deposit' => $securityDeposit,
+            'total_amount' => $totalAmount,
+            'pickup_location' => $request->pickup_location,
+            'drop_location' => $request->drop_location,
+            'pickup_coordinates' => $request->pickup_coordinates,
+            'drop_coordinates' => $request->drop_coordinates,
+            'delivery_address' => $request->delivery_address,
+            'delivery_latitude' => $request->delivery_latitude,
+            'delivery_longitude' => $request->delivery_longitude,
+        ];
+
+        // If digital payment (Stripe, card, etc.), DO NOT create booking yet!
+        // Return payment redirect link first. Booking will ONLY be created upon payment success in hook.
+        if ($request->payment_method != 'cash_after_service' && $request->payment_method != 'wallet_payment') {
+            try {
+                $user = auth('api')->user();
+                $payer = new Payer($user->first_name . ' ' . $user->last_name, $user->email, $user->phone, '');
+                $payment_info = new Payment(
+                    success_hook: 'car_booking_payment_success',
+                    failure_hook: 'car_booking_payment_fail',
+                    currency_code: currency_code(),
+                    payment_method: $request->payment_method,
+                    payment_platform: $request->payment_platform ?? 'app',
+                    payer_id: $user->id,
+                    receiver_id: null,
+                    additional_data: [
+                        'booking_params' => $bookingParams,
+                        'callback' => $request->callback,
+                        'is_partial' => $isPartial,
+                        'amount_to_pay' => $amountToPay,
+                        'paid_amount' => $amountToPay,
+                        'due_amount' => $dueAmount,
+                        'payment_method' => $request->payment_method,
+                    ],
+                    payment_amount: $amountToPay,
+                    external_redirect_link: $request->callback ?? null,
+                    attribute: 'car_booking',
+                    attribute_id: time()
+                );
+
+                $receiver_info = new Receiver('Admin', 'example.png');
+                $redirect_link = PaymentTrait::generate_link($payer, $payment_info, $receiver_info);
+
+                return response()->json(response_formatter(DEFAULT_200, [
+                    'redirect_link' => $redirect_link,
+                    'amount' => $amountToPay,
+                    'is_partial' => $isPartial,
+                    'due_amount' => $dueAmount,
+                ]), 200);
+            } catch (\Exception $e) {
+                Log::info("Car booking digital payment error: " . $e->getMessage());
+                return response()->json(response_formatter(DEFAULT_400, null, [['error_code' => 'payment_error', 'message' => $e->getMessage()]]), 400);
+            }
+        }
+
+        // For non-digital payment methods (cash_after_service, wallet_payment):
+        try {
+            $booking = self::createCarBookingRecord(
+                params: $bookingParams,
+                paymentMethod: $request->payment_method,
+                transactionId: ($request->payment_method == 'wallet_payment' ? ('wallet_' . time()) : 'cash-payment'),
+                isPartial: $isPartial,
+                amountToPay: $amountToPay,
+                dueAmount: $dueAmount
+            );
+
+            return response()->json(response_formatter(BOOKING_PLACE_SUCCESS_200, $booking), 200);
+        } catch (\Exception $e) {
+            return response()->json(response_formatter(DEFAULT_400, null, [['error_code' => 'booking_failed', 'message' => $e->getMessage()]]), 400);
+        }
+    }
+
+    /**
+     * Reusable static method to create a car booking record (called upon payment success or cash booking)
+     */
+    public static function createCarBookingRecord(
+        array $params,
+        string $paymentMethod,
+        ?string $transactionId,
+        int $isPartial,
+        float $amountToPay,
+        float $dueAmount
+    ): CarBooking {
+        return DB::transaction(function () use ($params, $paymentMethod, $transactionId, $isPartial, $amountToPay, $dueAmount) {
+            $car = Car::with('provider')->findOrFail($params['car_id']);
+            $totalAmount = (float)$params['total_amount'];
+            $rentAmount = (float)$params['rent_amount'];
+            $deliveryFee = (float)($params['delivery_fee'] ?? 0);
+            $securityDeposit = (float)($params['security_deposit'] ?? 0);
+            $userId = $params['user_id'];
+
+            $isDigital = ($paymentMethod !== 'cash_after_service' && $paymentMethod !== 'wallet_payment');
+
             $bookingData = [
-                'car_id' => $request->car_id,
-                'user_id' => auth('api')->id(),
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'pickup_type' => $request->pickup_type,
-                'pickup_time' => $pickupTime24,
-                'drop_time' => $dropTime24,
-                'description' => $request->description,
+                'car_id' => $params['car_id'],
+                'user_id' => $userId,
+                'start_date' => $params['start_date'],
+                'end_date' => $params['end_date'],
+                'pickup_type' => $params['pickup_type'],
+                'pickup_time' => $params['pickup_time'],
+                'drop_time' => $params['drop_time'],
+                'description' => $params['description'] ?? null,
                 'rent_amount' => $rentAmount,
                 'delivery_fee' => $deliveryFee,
                 'security_deposit' => $securityDeposit,
                 'total_amount' => $totalAmount,
-                'payment_method' => $request->payment_method,
-                'payment_status' => ($request->payment_method == 'cash_after_service') ? 'unpaid' : 'pending',
-                'booking_status' => 'pending',
-                'is_paid' => 0,
+                'payment_method' => $paymentMethod,
+                'payment_status' => ($paymentMethod == 'cash_after_service') ? 'unpaid' : ($isPartial ? 'partially_paid' : 'paid'),
+                'booking_status' => 'confirmed',
+                'is_paid' => ($isPartial || $paymentMethod == 'cash_after_service') ? 0 : 1,
+                'transaction_id' => $transactionId,
             ];
 
-            // Handle different pickup types
-            if ($request->pickup_type == 'chauffeur') {
-                $bookingData['pickup_location'] = $request->pickup_location;
-                $bookingData['drop_location'] = $request->drop_location;
-                $bookingData['pickup_coordinates'] = $request->pickup_coordinates;
-                $bookingData['drop_coordinates'] = $request->drop_coordinates;
-            } elseif ($request->pickup_type == 'delivery') {
-                $bookingData['delivery_address'] = $request->delivery_address;
-                $bookingData['delivery_latitude'] = $request->delivery_latitude;
-                $bookingData['delivery_longitude'] = $request->delivery_longitude;
+            if ($params['pickup_type'] == 'chauffeur') {
+                $bookingData['pickup_location'] = $params['pickup_location'] ?? null;
+                $bookingData['drop_location'] = $params['drop_location'] ?? null;
+                $bookingData['pickup_coordinates'] = $params['pickup_coordinates'] ?? null;
+                $bookingData['drop_coordinates'] = $params['drop_coordinates'] ?? null;
+            } elseif ($params['pickup_type'] == 'delivery') {
+                $bookingData['delivery_address'] = $params['delivery_address'] ?? null;
+                $bookingData['delivery_latitude'] = $params['delivery_latitude'] ?? null;
+                $bookingData['delivery_longitude'] = $params['delivery_longitude'] ?? null;
             }
 
-            $booking = $this->carBooking->create($bookingData);
+            $booking = CarBooking::create($bookingData);
 
-            // ===== Mirror into regular booking system (so reports/commission use regular flow) =====
+            // Mirror into regular booking system
             $provider = $car->provider;
             $regularBooking = Booking::create([
-                'customer_id' => auth('api')->id(),
+                'customer_id' => $userId,
                 'provider_id' => $car->provider_id,
                 'zone_id' => $provider?->zone_id,
-                'booking_status' => 'pending',
-                'is_paid' => 0,
-                'payment_method' => $request->payment_method,
-                'transaction_id' => null,
+                'booking_status' => 'accepted',
+                'is_paid' => ($isPartial || $paymentMethod == 'cash_after_service') ? 0 : 1,
+                'payment_method' => $paymentMethod,
+                'transaction_id' => $transactionId ?? ($paymentMethod == 'cash_after_service' ? 'cash-payment' : null),
                 'total_booking_amount' => $totalAmount,
                 'total_tax_amount' => 0,
                 'total_discount_amount' => 0,
                 'total_campaign_discount_amount' => 0,
                 'total_coupon_discount_amount' => 0,
-                'service_schedule' => \Carbon\Carbon::parse($request->start_date . ' ' . $request->pickup_time),
+                'service_schedule' => \Carbon\Carbon::parse($params['start_date'] . ' ' . $params['pickup_time']),
                 'service_address_id' => null,
                 'category_id' => $car->category_id,
                 'sub_category_id' => null,
-                'service_address_location' => $request->pickup_type === 'delivery' ? $request->delivery_address : ($request->pickup_location ?? null),
-                'notes' => $request->description,
-                // store some car meta for visibility
+                'service_address_location' => $params['pickup_type'] === 'delivery' ? ($params['delivery_address'] ?? null) : ($params['pickup_location'] ?? null),
+                'notes' => $params['description'] ?? null,
                 'car_registration_number' => $car->registration_number ?? null,
                 'car_model' => $car->model ?? null,
             ]);
 
-            // Minimal booking detail so regular booking details page has something to show
+            // Minimal booking detail
             $serviceName = ($car->service_category === 'chauffeur' ? 'Chauffeur Service: ' : 'Car Hire: ') . $car->brand . ' ' . ($car->model ?? '') . ($car->registration_number ? " ({$car->registration_number})" : '');
             $bookingDetail = BookingDetail::create([
                 'booking_id' => $regularBooking->id,
@@ -421,7 +523,6 @@ class CustomerCarController extends Controller
                 'total_cost' => $totalAmount,
             ]);
 
-            // Required for commission calculation logic on completion
             BookingDetailsAmount::create([
                 'booking_details_id' => $bookingDetail->id,
                 'booking_id' => $regularBooking->id,
@@ -438,13 +539,12 @@ class CustomerCarController extends Controller
             $booking->booking_id = $regularBooking->id;
             $booking->save();
 
-            // Wallet payment handling
-            if ($request->payment_method == 'wallet_payment') {
-                /** @var \Modules\UserManagement\Entities\User $user */
-                $user = auth('api')->user();
+            // Wallet payment
+            if ($paymentMethod == 'wallet_payment') {
+                $user = User::find($userId);
                 $walletChargeAmount = $isPartial ? $amountToPay : $totalAmount;
 
-                if ($user->wallet_balance < $walletChargeAmount) {
+                if (!$user || $user->wallet_balance < $walletChargeAmount) {
                     throw new \Exception('Insufficient wallet balance');
                 }
 
@@ -493,74 +593,86 @@ class CustomerCarController extends Controller
                         'paid_amount' => $walletChargeAmount,
                         'due_amount' => $dueAmount,
                     ]);
-
-                    $booking->update([
-                        'is_paid' => 0,
-                        'payment_status' => 'partially_paid',
-                        'transaction_id' => 'wallet_payment_' . time()
-                    ]);
-
-                    $regularBooking->is_paid = 0;
-                    $regularBooking->payment_method = 'wallet_payment';
-                    $regularBooking->transaction_id = $booking->transaction_id;
-                    $regularBooking->save();
-                } else {
-                    $booking->update([
-                        'is_paid' => 1,
-                        'payment_status' => 'paid',
-                        'transaction_id' => 'wallet_payment_' . time()
-                    ]);
-
-                    $regularBooking->is_paid = 1;
-                    $regularBooking->payment_method = 'wallet_payment';
-                    $regularBooking->transaction_id = $booking->transaction_id;
-                    $regularBooking->save();
                 }
             }
 
+            // Digital payment: partial record & admin pending balance
+            if ($isDigital) {
+                if ($isPartial) {
+                    BookingPartialPayment::create([
+                        'booking_id' => $regularBooking->id,
+                        'paid_with' => $paymentMethod,
+                        'paid_amount' => $amountToPay,
+                        'due_amount' => $dueAmount,
+                    ]);
+                }
+
+                $admin_user = User::where('user_type', 'admin')->first();
+                $admin_user_id = $admin_user ? $admin_user->id : null;
+
+                if ($admin_user_id) {
+                    $admin_account = \Modules\TransactionModule\Entities\Account::where('user_id', $admin_user_id)->first();
+                    if ($admin_account) {
+                        $admin_account->balance_pending += $amountToPay;
+                        $admin_account->save();
+                    }
+
+                    \Modules\TransactionModule\Entities\Transaction::create([
+                        'booking_id' => $regularBooking->id,
+                        'car_booking_id' => $booking->id,
+                        'trx_type' => 'car_booking_amount',
+                        'debit' => 0,
+                        'credit' => $amountToPay,
+                        'balance' => $admin_account ? $admin_account->balance_pending : 0,
+                        'from_user_id' => $userId,
+                        'to_user_id' => $admin_user_id,
+                        'to_user_account' => 'admin_balance'
+                    ]);
+                }
+            }
+
+            self::staticSendCarBookingNotifications($booking);
+
             return $booking;
         });
+    }
 
-        // Send notifications after booking is created
-        $this->sendCarBookingNotifications($booking);
+    /**
+     * Send notifications for car bookings
+     */
+    public static function staticSendCarBookingNotifications($booking)
+    {
+        $bookingNotification = (int) (business_config('booking_notification', 'business_information'))?->live_values;
+        $bookingNotificationType = (business_config('booking_notification_type', 'business_information'))?->live_values;
 
-        if ($request->payment_method != 'cash_after_service' && $request->payment_method != 'wallet_payment') {
-            // Digital Payment
-            $user = auth('api')->user();
-            $payer = new Payer($user->first_name . ' ' . $user->last_name, $user->email, $user->phone, '');
-            $payment_info = new Payment(
-                success_hook: 'car_booking_payment_success',
-                failure_hook: 'car_booking_payment_fail',
-                currency_code: currency_code(),
-                payment_method: $request->payment_method,
-                payment_platform: $request->payment_platform ?? 'app',
-                payer_id: $user->id,
-                receiver_id: null,
-                additional_data: [
-                    'car_booking_id' => $booking->id,
-                    'booking_id' => $booking->booking_id,
-                    'callback' => $request->callback,
-                    'is_partial' => $isPartial,
-                    'paid_amount' => $amountToPay,
-                    'due_amount' => $dueAmount,
-                ],
-                payment_amount: $amountToPay,
-                external_redirect_link: $request->callback ?? null,
-                attribute: 'car_booking_id',
-                attribute_id: $booking->id
-            );
+        if ($bookingNotification && $bookingNotificationType == 'firebase') {
+            try {
+                $zoneId = $booking->booking ? $booking->booking->zone_id : ($booking->car->provider->zone_id ?? null);
+                $providerId = $booking->car->provider_id ?? null;
 
-            $receiver_info = new Receiver('Admin', 'example.png');
-            $redirect_link = PaymentTrait::generate_link($payer, $payment_info, $receiver_info);
-
-            return response()->json(response_formatter(BOOKING_PLACE_SUCCESS_200, [
-                'booking' => $booking,
-                'redirect_link' => $redirect_link,
-                'amount' => $amountToPay
-            ]), 200);
+                if ($zoneId && $providerId) {
+                    $topic = "demandium_provider_{$zoneId}_{$providerId}_booking_message";
+                    topic_notification($topic, 'new car booking request', '', 'def.png', null);
+                }
+            } catch (\Exception $e) {
+                info("Starting notification error: " . $e->getMessage());
+            }
         }
 
-        return response()->json(response_formatter(BOOKING_PLACE_SUCCESS_200, $booking), 200);
+        $bookingNotificationStatus = business_config('booking', 'notification_settings')?->live_values;
+        if (isset($bookingNotificationStatus) && isset($bookingNotificationStatus['push_notification_booking']) && $bookingNotificationStatus['push_notification_booking']) {
+            $provider = $booking->car->provider;
+            if ($provider) {
+                $fcmToken = $provider->owner->fcm_token ?? null;
+                $languageKey = $provider->owner->current_language_key ?? 'en';
+
+                $title = get_push_notification_message('new_service_request_arrived', 'provider_notification', $languageKey);
+
+                if ($title && $fcmToken && sendDeviceNotificationPermission($provider->id)) {
+                    device_notification($fcmToken, $title, null, null, $booking->id, 'car_booking');
+                }
+            }
+        }
     }
 
     public function getCarTypes(): JsonResponse
@@ -686,44 +798,7 @@ class CustomerCarController extends Controller
      */
     protected function sendCarBookingNotifications($booking)
     {
-        // 1. Firebase Topic Notification
-        $bookingNotification = (int) (business_config('booking_notification', 'business_information'))?->live_values;
-        $bookingNotificationType = (business_config('booking_notification_type', 'business_information'))?->live_values;
-
-        if ($bookingNotification && $bookingNotificationType == 'firebase') {
-            try {
-                // Get zone_id from related Booking or Car->Provider relationship
-                $zoneId = $booking->booking ? $booking->booking->zone_id : ($booking->car->provider->zone_id ?? null);
-
-                // Get provider_id
-                $providerId = $booking->car->provider_id ?? null;
-
-                if ($zoneId && $providerId) {
-                    $topic = "demandium_provider_{$zoneId}_{$providerId}_booking_message";
-                    topic_notification($topic, 'new car booking request', '', 'def.png', null);
-                }
-            } catch (\Exception $e) {
-                // Log exception if needed, or ignore to not break flow
-                info("Starting notification error: " . $e->getMessage());
-            }
-        }
-
-        // 2. Device Notification (FCM) to Provider
-        $bookingNotificationStatus = business_config('booking', 'notification_settings')?->live_values;
-        // Check if push_notification_booking is enabled
-        if (isset($bookingNotificationStatus) && isset($bookingNotificationStatus['push_notification_booking']) && $bookingNotificationStatus['push_notification_booking']) {
-            $provider = $booking->car->provider;
-            if ($provider) {
-                $fcmToken = $provider->owner->fcm_token ?? null;
-                $languageKey = $provider->owner->current_language_key ?? 'en';
-
-                $title = get_push_notification_message('new_service_request_arrived', 'provider_notification', $languageKey);
-
-                if ($title && $fcmToken && sendDeviceNotificationPermission($provider->id)) {
-                    device_notification($fcmToken, $title, null, null, $booking->id, 'car_booking');
-                }
-            }
-        }
+        self::staticSendCarBookingNotifications($booking);
     }
 
 

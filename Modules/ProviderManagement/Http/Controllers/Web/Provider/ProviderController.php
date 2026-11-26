@@ -135,10 +135,12 @@ class ProviderController extends Controller
             ->where('is_checked', 0)->count();
         $zoneId = $request->user()->provider->zone_id;
         $isPartner = (int)($request->user()->provider->is_partner ?? 0);
-        $readIds = DB::table('push_notification_reads')
-            ->where('user_id', $request->user()->id)
-            ->pluck('notification_id')
-            ->toArray();
+        $readIds = \Illuminate\Support\Facades\Schema::hasTable('push_notification_reads')
+            ? DB::table('push_notification_reads')
+                ->where('user_id', $request->user()->id)
+                ->pluck('notification_id')
+                ->toArray()
+            : [];
 
         $notificationQuery = $this->push_notification
             ->where(function ($query) use ($zoneId) {
@@ -210,10 +212,12 @@ class ProviderController extends Controller
         $zoneId = $user->provider->zone_id;
         $isPartner = (int)($user->provider->is_partner ?? 0);
 
-        $readIds = DB::table('push_notification_reads')
-            ->where('user_id', $user->id)
-            ->pluck('notification_id')
-            ->toArray();
+        $readIds = \Illuminate\Support\Facades\Schema::hasTable('push_notification_reads')
+            ? DB::table('push_notification_reads')
+                ->where('user_id', $user->id)
+                ->pluck('notification_id')
+                ->toArray()
+            : [];
 
         $notifications = $this->push_notification
             ->where(function ($query) use ($zoneId) {
@@ -342,10 +346,12 @@ class ProviderController extends Controller
     public function dashboard(Request $request, Transaction $transaction, SubscribedService $subscribedService, Serviceman $serviceman): Renderable
     {
         $zoneId = $request->user()->provider->zone_id;
-        $readIds = DB::table('push_notification_reads')
-            ->where('user_id', $request->user()->id)
-            ->pluck('notification_id')
-            ->toArray();
+        $readIds = \Illuminate\Support\Facades\Schema::hasTable('push_notification_reads')
+            ? DB::table('push_notification_reads')
+                ->where('user_id', $request->user()->id)
+                ->pluck('notification_id')
+                ->toArray()
+            : [];
 
         $notification = $this->push_notification
             ->where(function ($query) use ($zoneId) {

@@ -372,3 +372,44 @@
 .badge.link-color-bg {
     color: #ffffff !important;
 }
+
+/* -----------------------------------------------
+   26. GLOBAL DARK GOLD ACCENTS (BUTTONS, COUNTS, SETTINGS)
+   ----------------------------------------------- */
+.settings-toggle-icon,
+[data-bs-theme=light] .settings-toggle-icon,
+[data-bs-theme=dark] .settings-toggle-icon {
+    background-color: #9A6F1E !important;
+    color: #ffffff !important;
+}
+
+.aside-body .nav li .link-title .count {
+    background-color: #9A6F1E !important;
+    color: #ffffff !important;
+    border-radius: 3.125rem !important;
+}
+
+.border-color-primary {
+    border-color: #9A6F1E !important;
+}
+
+.zone-setup-instructions .c1,
+.zone-setup-instructions h4 {
+    color: #9A6F1E !important;
+}
+
+button[type="submit"].btn--primary,
+button[type="submit"].btn-primary,
+.btn--primary,
+.btn-primary {
+    background-color: #9A6F1E !important;
+    border-color: #7D5A15 !important;
+    color: #ffffff !important;
+}
+
+.btn--primary:hover,
+.btn-primary:hover {
+    background-color: #7D5A15 !important;
+    border-color: #613F0D !important;
+    color: #ffffff !important;
+}

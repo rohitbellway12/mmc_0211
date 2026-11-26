@@ -7935,4 +7935,7 @@ _Message' => 'Customer notification for provider bid offer
                                                         zone_._Minimum_3_points_required' => 'Click this icon to start pin points in the map and connect them 
                                                         to draw a 
                                                         zone . Minimum 3 points required',
+  'Redirect to payment link to complete payment' => 'Redirect to payment link to complete payment',
+  'Customer Test User accepted quotation #10017' => 'Customer Test User accepted quotation #10017',
+  'car_booking_wallet_payment' => 'Car booking wallet payment',
 );

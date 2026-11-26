@@ -129,3 +129,25 @@ if (!function_exists('car_booking_payment_fail')) {
         //
     }
 }
+
+if (!function_exists('estimate_digital_payment_success')) {
+    /**
+     * @param $data
+     * @return void
+     */
+    function estimate_digital_payment_success($data): void
+    {
+        PaymentResponse::estimateDigitalPaymentSuccess($data);
+    }
+}
+
+if (!function_exists('estimate_digital_payment_fail')) {
+    /**
+     * @param $data
+     * @return void
+     */
+    function estimate_digital_payment_fail($data): void
+    {
+        // Digital payment failed or canceled; estimate remains in sent status so customer can retry
+    }
+}

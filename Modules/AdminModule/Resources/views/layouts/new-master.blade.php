@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/css/dev.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/css/dev-tahir.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/common')}}/css/common.css"/>
+    <link rel="stylesheet" href="{{asset('public/assets/admin-module')}}/css/custom.css"/>
 
     @stack('css_or_js')
 </head>

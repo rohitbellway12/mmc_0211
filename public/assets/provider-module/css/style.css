@@ -38,10 +38,13 @@
         4.1 Small Sections
     ********************/
 :root {
-  --bs-primary: #4153b3;
-  --bs-primary-rgb: 65, 83, 179;
-  --bs-primary-dark: #34428F;
-  --bs-primary-dark-rgb: 52, 66, 143;
+  /* Primary - MMC Dark Gold Theme */
+  --bs-primary: #9A6F1E;
+  --bs-primary-rgb: 154, 111, 30;
+  --bs-primary-dark: #7D5A15;
+  --bs-primary-dark-rgb: 125, 90, 21;
+  --c1: #9A6F1E;
+  --c2: #9A6F1E;
   /* --bs-primary: #ff6767; */
   --bg-color: #F7F8F9;
   --bg-color2: #F4F5F6;

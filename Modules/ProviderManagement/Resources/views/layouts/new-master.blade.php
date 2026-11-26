@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="{{asset('public/assets/provider-module')}}/css/dev.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/provider-module')}}/css/dev-tahir-provider.css"/>
     <link rel="stylesheet" href="{{asset('public/assets/common')}}/css/common.css"/>
+    <link rel="stylesheet" href="{{asset('public/assets/provider-module')}}/css/custom.css"/>
 
     @stack('css_or_js')
     <style>

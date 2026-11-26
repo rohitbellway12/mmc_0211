@@ -694,6 +694,27 @@ class PaymentResponse
             $carBooking = CarBooking::where('booking_id', $booking_id)->first();
         }
 
+        // If carBooking does not exist yet (New digital booking created only on payment success):
+        if (!$carBooking && !empty($additional_data['booking_params'])) {
+            $paid_amount = (float) (isset($additional_data['paid_amount']) && (float)$additional_data['paid_amount'] > 0
+                ? $additional_data['paid_amount']
+                : ($data['payment_amount'] ?? 0));
+            $due_amount = (float)($additional_data['due_amount'] ?? 0);
+
+            try {
+                $carBooking = \Modules\CarHire\Http\Controllers\Api\V1\CustomerCarController::createCarBookingRecord(
+                    params: $additional_data['booking_params'],
+                    paymentMethod: $payment_method,
+                    transactionId: $tran_id,
+                    isPartial: $is_partial,
+                    amountToPay: $paid_amount,
+                    dueAmount: $due_amount
+                );
+            } catch (\Exception $e) {
+                info("Car booking creation on payment success error: " . $e->getMessage());
+            }
+        }
+
         if ($carBooking) {
             $linkedBooking = !empty($carBooking->booking_id)
                 ? Booking::with('booking_partial_payments')->find($carBooking->booking_id)
@@ -815,6 +836,79 @@ class PaymentResponse
 
         $response['callback'] = $callback;
         return $response;
+    }
+
+    /**
+     * Handle payment success for Booking Estimates / Quotations
+     *
+     * @param $data
+     * @return array
+     */
+    public static function estimateDigitalPaymentSuccess($data): array
+    {
+        $tranId = $data['transaction_id'] ?? null;
+        $payment_request_id = $data->id;
+
+        $additional_data = is_array($data['additional_data']) ? $data['additional_data'] : json_decode($data['additional_data'], true);
+        $estimateId = $additional_data['estimate_id'] ?? null;
+        $customerId = $additional_data['customer_id'] ?? $data['payer_id'];
+        $isPartial = (int)($additional_data['is_partial'] ?? 0);
+        $amountToPay = (float)($additional_data['amount_to_pay'] ?? ($data['payment_amount'] ?? 0));
+        $dueAmount = (float)($additional_data['due_amount'] ?? 0);
+        $paymentMethod = $data['payment_method'] ?? ($additional_data['payment_method'] ?? 'digital');
+        $callback = $additional_data['callback'] ?? null;
+
+        if (!$estimateId) {
+            return ['flag' => 'failed', 'message' => 'Estimate ID missing'];
+        }
+
+        $estimate = \Modules\BookingModule\Entities\BookingEstimate::with(['service', 'provider.owner'])->find($estimateId);
+        if (!$estimate) {
+            return ['flag' => 'failed', 'message' => 'Estimate not found'];
+        }
+
+        // Idempotency check: If already converted, return existing booking
+        if ($estimate->status === 'accepted' && !empty($estimate->booking_id)) {
+            $existingBooking = Booking::find($estimate->booking_id);
+            return [
+                'flag' => 'success',
+                'booking_id' => $existingBooking?->id,
+                'callback' => $callback,
+            ];
+        }
+
+        try {
+            $booking = \Modules\BookingModule\Http\Controllers\Api\V1\Customer\BookingEstimateController::createBookingFromEstimateRecord(
+                estimate: $estimate,
+                customerId: $customerId,
+                paymentMethod: $paymentMethod,
+                transactionId: $tranId,
+                isPartial: $isPartial,
+                amountToPay: $amountToPay,
+                dueAmount: $dueAmount
+            );
+
+            // Update payment request with booking attribute for callback resolution
+            $payment_request = PaymentRequest::find($payment_request_id);
+            if ($payment_request && $booking) {
+                $payment_request->attribute = 'booking';
+                $payment_request->attribute_id = $booking->readable_id;
+                $payment_request->save();
+            }
+
+            return [
+                'flag' => 'success',
+                'booking_id' => $booking?->id,
+                'callback' => $callback,
+            ];
+        } catch (\Exception $e) {
+            info("estimateDigitalPaymentSuccess Error: " . $e->getMessage());
+            return [
+                'flag' => 'failed',
+                'message' => $e->getMessage(),
+                'callback' => $callback,
+            ];
+        }
     }
 }
 

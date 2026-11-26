@@ -1128,7 +1128,13 @@ class BookingController extends Controller
                     ->orWhere('id', $payment_info->attribute_id)
                     ->first();
                 $booking_id = $booking ? $booking->id : null;
-            } elseif ($payment_info->attribute === 'car_booking_id') {
+            } elseif ($payment_info->attribute === 'estimate_id') {
+                $estimate = \Modules\BookingModule\Entities\BookingEstimate::find($payment_info->attribute_id);
+                if ($estimate && $estimate->booking_id) {
+                    $booking = Booking::find($estimate->booking_id);
+                    $booking_id = $booking ? $booking->id : null;
+                }
+            } elseif ($payment_info->attribute === 'car_booking_id' || $payment_info->attribute === 'car_booking') {
                 $car_booking = \Modules\CarHire\Entities\CarBooking::find($payment_info->attribute_id);
                 if ($car_booking) {
                     $booking_id = $car_booking->booking_id; // Linked regular booking
